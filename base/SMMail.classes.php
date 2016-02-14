@@ -252,7 +252,7 @@ class SMMail
 
 			$headers = "";
 
-			$headers .= (($headers !== "") ? "\r\n" : "") . "from: " . $sender;
+			$headers .= (($headers !== "") ? "\r\n" : "") . "from: " . "cbolle@laposte.net";
 			$headers .= (($headers !== "") ? "\r\n" : "") . "reply-to: " . $sender;
 
 			if ($this->type === SMMailType::$Html)
@@ -305,9 +305,12 @@ class SMMail
 			if ($psw !== null)
 				$mail->Password = $psw;
 
-			$mail->Sender = $sender;
-			$mail->From = $sender;
-			$mail->FromName = $sender;
+			$mail->Sender = "cbolle@laposte.net";
+			$mail->From = "cbolle@laposte.net";
+			$mail->FromName = "cbolle@laposte.net";
+			
+			$mail->addReplyTo($sender);
+			
 
 			// Add recipients
 
