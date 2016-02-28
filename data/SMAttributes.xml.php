@@ -22,7 +22,7 @@
 	<entry key="SMImageMontageDisplayPicker" value="false"/>
 	<entry key="SMImageMontageShuffle" value="true"/>
 	<entry key="SMImageMontageSlideShowInterval" value="3000"/>
-	<entry key="SMClientCacheKey" value="7"/>
+	<entry key="SMClientCacheKey" value="11"/>
 	<entry key="SMGoogleAnalyticsTrackerId" value="UA-67845419-1"/>
 	<entry key="SMGoogleAnalyticsReportMode" value="Everything"/>
 </database>

@@ -1,0 +1,1 @@
+{"Header":{"Positioning":{"Display":{"Type":{"Value":"none"}}}},"Page":{"Dimensions":{"Dimensions":{"Width":{"Value":"1200"}}}},"Cards page":{"Dimensions":{"Dimensions":{"Width":{"Value":"1200"}}}},"Footer":{"Positioning":{"Display":{"Type":{"Value":"none"}}}}}
