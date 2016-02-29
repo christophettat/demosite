@@ -5,5 +5,4 @@
 	<entry id="f0f099c49770fda2ee42b4a8b52d43b8" parent="" order="8" title="Tarifs" url="Tarifs.html"/>
 	<entry id="de7fa7c46dbde89f59a30bd134b16ae1" parent="" order="10" title="Contact" url="Contact.html"/>
 	<entry id="252eca08e2c8a8141df47cdb9c75f318" parent="" order="5" title="Le Gite" url="Index.html"/>
-	<entry id="14804c1dc262756a73c4805f63edca38" parent="" order="7" title="La Visite" url="Gite_interieur.html"/>
 </database>
