@@ -6,8 +6,8 @@
 	<entry key="SMGalleryWidth" value=""/>
 	<entry key="SMGalleryHeight" value="180"/>
 	<entry key="SMGalleryPadding" value="3"/>
-	<entry key="SMContactRecipients" value="christophe_xxx@yahoo.fr"/>
-	<entry key="SMContactSubject" value="Location Gite"/>
+	<entry key="SMContactRecipients" value="christophe_xxx@yahoo.fr,marijke.nulens@gmail.com"/>
+	<entry key="SMContactSubject" value="Location Gite Le Vigan"/>
 	<entry key="SMContactSuccessMessage" value="Merci de votre message, notre r&amp;eacute;ponse ne devrait pas tarder"/>
 	<entry key="SMPagesAutoSeoUrlsVersion" value="20140720"/>
 	<entry key="SMAutoSeoUrlsCompleted" value="true"/>
