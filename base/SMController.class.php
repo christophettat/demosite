@@ -138,6 +138,7 @@ class SMController
 		$head = "";
 		$head .= "\n\t<meta name=\"generator\" content=\"Sitemagic CMS\">";
 		$head .= "\n\t<meta http-equiv=\"content-type\" content=\"text/html;charset=" . $charSet . "\">";
+		$head .= "\n\t<meta name=\"google-site-verification\" content=\"RrBz0yynIa-VAs2QseMPKGh-GAKfgsRkAxIC92AzXUA\" />";
 		$head .= "\n\t<link rel=\"shortcut icon\" type=\"images/x-icon\" href=\"favicon.ico\">";
 		$head .= "\n\t<link rel=\"stylesheet\" type=\"text/css\" href=\"base/gui/gui.css?ver=" . SMEnvironment::GetVersion() . "\">";
 		if ($basicCss !== null)
