@@ -33,9 +33,9 @@ $mail->Username = "gitevigan@gmail.com";
 //Password to use for SMTP authentication
 $mail->Password = "ogjtzoaqfulyjpqu";
 //Set who the message is to be sent from
-$mail->setFrom('gitevigan@gmail.com', 'GiteVigan');
+//$mail->setFrom('gitevigan@gmail.com', 'GiteVigan');
 //Set an alternative reply-to address
-$mail->addReplyTo('gitevigan@gmail.com', 'GiteVigan');
+//$mail->addReplyTo('gitevigan@gmail.com', 'GiteVigan');
 //Set who the message is to be sent to
 $mail->addAddress('christophe_xxx@yahoo.fr', 'John Doe');
 //Set the subject line
