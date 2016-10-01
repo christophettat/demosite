@@ -29,13 +29,13 @@ $mail->SMTPSecure = 'tls';
 //Whether to use SMTP authentication
 $mail->SMTPAuth = true;
 //Username to use for SMTP authentication - use full email address for gmail
-$mail->Username = "christophe.bolle@gmail.com";
+$mail->Username = "gitevigan@gmail.com";
 //Password to use for SMTP authentication
-$mail->Password = "gaoanpmzzzilzqda";
+$mail->Password = "ogjtzoaqfulyjpqu";
 //Set who the message is to be sent from
-$mail->setFrom('from@example.com', 'First Last');
+$mail->setFrom('gitevigan@gmail.com', 'GiteVigan');
 //Set an alternative reply-to address
-$mail->addReplyTo('replyto@example.com', 'First Last');
+$mail->addReplyTo('gitevigan@gmail.com', 'GiteVigan');
 //Set who the message is to be sent to
 $mail->addAddress('christophe_xxx@yahoo.fr', 'John Doe');
 //Set the subject line
