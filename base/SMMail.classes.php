@@ -305,9 +305,9 @@ class SMMail
 			if ($psw !== null)
 				$mail->Password = $psw;
 
-			$mail->Sender = "cbolle@laposte.net";
-			$mail->From = "cbolle@laposte.net";
-			$mail->FromName = "cbolle@laposte.net";
+			$mail->Sender = "gitevigan@gmail.com";
+			$mail->From = "gitevigan@gmail.com";
+			$mail->FromName = "gitevigan@gmail.com";
 			
 			$mail->addReplyTo($sender);
 			

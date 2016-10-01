@@ -30,7 +30,7 @@
 <!-- optional, may be left out or empty - defaults to False -->
 	<entry key="Debug" value="True"/>
 <!-- optional, may be left out or empty (in which case PHP mail() is used to send e-mails) -->
-	<entry key="SMTPHost" value="smtp.laposte.net"/>
+	<entry key="SMTPHost" value="smtp.gmail.com"/>
 <!-- optional, may be left out or empty - defaults to 25) -->
 	<entry key="SMTPPort" value="587"/>
 <!-- optional, may be left out or empty - valid values: LOGIN (default), PLAIN, NTLM, CRAM-MD5 -->
@@ -38,9 +38,9 @@
 <!-- optional, may be left out or empty - valid values: TLS, SSL -->
 	<entry key="SMTPEncryption" value="TLS"/>
 <!-- optional, may be left out or empty -->
-	<entry key="SMTPUser" value="cbogite@laposte.net"/>
+	<entry key="SMTPUser" value="gitevigan@gmail.com"/>
 <!-- optional, may be left out or empty -->
-	<entry key="SMTPPass" value="w0QEq93G"/>
+	<entry key="SMTPPass" value="ogjtzoaqfulyjpqu"/>
 <!-- optional, may be left out or empty - defaults to False -->
 	<entry key="SMTPDebug" value="True"/>
 </entries>
