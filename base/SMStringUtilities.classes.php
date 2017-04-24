@@ -1,7 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMStringUtilities">
 /// 	Class contains useful and common functionality used to manipulate and parse strings.
 /// </container>
@@ -254,6 +252,10 @@ class SMStringUtilities
 		{
 			return ($str !== "");
 		}
+		else if ($restriction === SMValueRestriction::$EmailAddress)
+		{
+			return (preg_match("/^[a-z0-9!#$%&'*+-\/=?^_`{|}~]+@[a-z0-9_.-]+$/i", $str) === 1); // https://regex101.com/r/zU5vG7/2
+		}
 
 		return true; // SMValueRestriction::$None
 	}
@@ -266,7 +268,7 @@ class SMStringUtilities
 	/// 	<param name="str" type="string"> Value to encode </param>
 	/// 	<param name="doubleEncode" type="boolean" default="false"> Set True to double encode existing entities, False not to </param>
 	/// </function>
-	public static function HtmlEntityEncode($str, $doubleEncode = false)
+	public static function HtmlEntityEncode($str, $doubleEncode = false) // Double encoding breaks encoded unicode characters
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "str", $str, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "doubleEncode", $doubleEncode, SMTypeCheckType::$Boolean);
@@ -289,7 +291,7 @@ class SMStringUtilities
 	/// 	<param name="str" type="string"> Value to encode </param>
 	/// 	<param name="doubleEncode" type="boolean" default="false"> Set True to double encode existing entities, False not to </param>
 	/// </function>
-	public static function HtmlEncode($str, $doubleEncode = false)
+	public static function HtmlEncode($str, $doubleEncode = false) // Double encoding breaks encoded unicode characters
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "str", $str, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "doubleEncode", $doubleEncode, SMTypeCheckType::$Boolean);
@@ -305,6 +307,30 @@ class SMStringUtilities
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "str", $str, SMTypeCheckType::$String);
 		return htmlspecialchars_decode($str, ENT_COMPAT); // Notice: ENT_HTML401 undefined in PHP 5.2 + No encoding argument according to documentation
+	}
+
+	/// <function container="base/SMStringUtilities" name="EscapeJson" access="public" static="true" returns="string">
+	/// 	<description>
+	/// 		Escape string value to prevent e.g. line breaks or back slashes from breaking JSON output.
+	/// 	</description>
+	/// 	<param name="str" type="string"> Value to make safe for JSON output </param>
+	/// </function>
+	public static function EscapeJson($str)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "str", $str, SMTypeCheckType::$String);
+
+		$str = str_replace("\\", "\\\\", $str);
+		$str = str_replace("\r", "", $str);
+		$str = str_replace("\n", "\\n", $str);
+		$str = str_replace("\t", "\\t", $str);
+		$str = str_replace("\"", "\\\"", $str);
+
+		return $str;
+	}
+
+	public static function JsonEncode($str) // Backward compatibility
+	{
+		return self::EscapeJson($str);
 	}
 }
 
@@ -380,6 +406,11 @@ class SMValueRestriction
 	/// 	<description> Value must be a valid string with a length of 1 or more characters </description>
 	/// </member>
 	public static $NonEmpty = "NonEmpty";
+
+	/// <member container="base/SMValueRestriction" name="EmailAddress" access="public" static="true" type="string" default="EmailAddress">
+	/// 	<description> Value must be a valid e-mail address containing only ASCII compatible characters </description>
+	/// </member>
+	public static $EmailAddress = "EmailAddress";
 }
 
 ?>

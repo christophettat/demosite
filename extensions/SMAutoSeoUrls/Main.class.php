@@ -4,6 +4,9 @@ class SMAutoSeoUrls extends SMExtension // Supplementary extension to SMPages an
 {
 	public function Init()
 	{
+		if (SMEnvironment::IsSubSite() === true) // SEO URL configuration on main site also applies to subsites
+			return;
+
 		if (SMExtensionManager::ExtensionEnabled("SMPages") === false) // Make sure SMPages exists and is enabled
 			return;
 
@@ -12,7 +15,9 @@ class SMAutoSeoUrls extends SMExtension // Supplementary extension to SMPages an
 		// Update version number below to have .htaccess installed again with new version of Sitemagic CMS.
 		// Set it to SMEnvironment::GetVersion() to always deploy a new version of the .htaccess with a new version
 		// of Sitemagic CMS. Notice, however, that this will cause modifications to be lost with every new version!
-		$vers = 20140720; // Not necessarily the same as Sitemagic version - it simply represents .htaccess version!
+		//$vers = 20140720; // Not necessarily the same as Sitemagic version - it simply represents .htaccess version!
+		//$vers = 20160228; // Adds support for web shop
+		$vers = 20160828; // Adds Cache Control
 
 		if (SMAttributes::GetAttribute("SMPagesAutoSeoUrlsVersion") !== (string)$vers)
 		{

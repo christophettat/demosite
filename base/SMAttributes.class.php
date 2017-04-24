@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMDataSource.classes.php");
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMAttributes">
 /// 	Persistent key value pair storage useful for storing extension configuration.
 /// 	Be careful to use unique keys - preferably prefix keys with name of extension.
@@ -154,6 +150,22 @@ class SMAttributes
 	{
 		self::ensureResources();
 		self::$ds->Unlock();
+	}
+
+	/// <function container="base/SMAttributes" name="Reload" access="public" static="true">
+	/// 	<description> Reload attributes - uncommitted changes are discarded </description>
+	/// 	<param name="unlock" type="boolean" default="true"> True to release lock, false to keep lock </param>
+	/// </function>
+	public static function Reload($unlock = true)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "unlock", $unlock, SMTypeCheckType::$Boolean);
+		self::ensureResources();
+
+		if ($unlock === true)
+			self::Unloack();
+
+		self::$keyValueCollections = self::$ds->Select("*");
+		self::$changesMade = false;
 	}
 
 	/// <function container="base/SMAttributes" name="Commit" access="public" static="true">

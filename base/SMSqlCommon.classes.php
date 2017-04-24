@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-
 interface SMIDataSourceCache
 {
 	// Interface defines functions used outside the SMDataSource - e.g. by the controller.
@@ -194,7 +190,7 @@ abstract class SMDataSourceCacheItem
 		if ($this->dirty === true)
 			throw new Exception("Unable to lock data source '" . $this->name . "' - uncommitted data found");
 
-		$this->lock = fopen(dirname(__FILE__) . "/../data/" . $this->name . ".lock", "w");
+		$this->lock = fopen(dirname(__FILE__) . "/../" . SMEnvironment::GetDataDirectory() . "/" . $this->name . ".lock", "w");
 		if ($this->lock === false)
 			throw new Exception("Unable to access lock file for data source '" . $this->name . "'");
 

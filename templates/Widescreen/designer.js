@@ -40,7 +40,7 @@
 					"Background":
 					{
 						"Color": { Type: "Color" },
-						"Image": { Type: "File", Value: "files/images/backgrounds/Sunrise.jpg", Items: [ { Value: "generated-bg.jpg" } ] }
+						"Image": { Type: "File", Value: SMEnvironment.GetFilesDirectory() + "/images/backgrounds/Sunrise.jpg", Items: [ { Value: "generated-bg.jpg" } ] }
 					},
 					"Generator":
 					{
@@ -744,7 +744,7 @@
 				// background: url("../../files/images/background/Sky.jpg");
 				// During design time, this is not necessary since CSS is injected
 				// into the page, meaning files are resolved from page root.
-				if (saving === true && wallpaper.indexOf("files/") === 0)
+				if (saving === true && wallpaper.indexOf(SMEnvironment.GetFilesDirectory() + "/images/") === 0)
 					wallpaper = "../../" + wallpaper;
 
 				// For background images located under templates/XYZ (e.g. generated-bg.jpg):
@@ -753,7 +753,7 @@
 				// background: url("templates/Sunrise/generated-bg.jpg");
 				// When saving, this is not necessary since the file will then be
 				// referenced from templates/XYZ/style.css.
-				if (saving === false && wallpaper !== "" && wallpaper.indexOf("files/") !== 0) // Assume images not starting with "files/" is located in template folder
+				if (saving === false && wallpaper !== "" && wallpaper.indexOf(SMEnvironment.GetFilesDirectory() + "/images/") !== 0) // Assume images not starting with "files/images/" are located in template folder
 					wallpaper = eventArgs.TemplatePath + "/" + wallpaper;
 
 				css += "html.Normal,"
@@ -841,7 +841,7 @@
 				{
 					// Remove any margin
 					for (var prop in editors["Header"]["Indentation"]["Margin"])
-						if (prop !== "All sides");
+						if (prop !== "All sides")
 							editors["Header"]["Indentation"]["Margin"][prop].Control.SetValue("0");
 
 					editors["Header"]["Indentation"]["Margin"]["All sides"].Control.SetValue(0);
@@ -1369,7 +1369,8 @@
 			if (text !== null)
 			{
 				css += "div.TPLContent, html.Basic.SMPagesViewer.SMPagesClassicLayout body, html.SMPagesEditor.SMPagesContentPage.SMPagesClassicLayout body,";
-				css += "div.TPLContent td, html.Basic.SMPagesViewer.SMPagesClassicLayout body td, html.SMPagesEditor.SMPagesContentPage.SMPagesClassicLayout body td";
+				css += "div.TPLContent td, html.Basic.SMPagesViewer.SMPagesClassicLayout body td, html.SMPagesEditor.SMPagesContentPage.SMPagesClassicLayout body td,";
+				css += "div.TPLContent legend, html.Basic.SMPagesViewer.SMPagesClassicLayout body legend, html.SMPagesEditor.SMPagesContentPage.SMPagesClassicLayout body legend";
 				css += "{";
 				css += text;
 				css += "}";

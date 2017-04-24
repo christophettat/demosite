@@ -188,7 +188,7 @@ SMDesigner =
 				}
 			},
 			// Load additional plugin(s) - must be compatible with version of jQuery used by Sitemagic!
-			["extensions/SMDesigner/plugins/colpick/js/colpick.js"], ["extensions/SMDesigner/plugins/colpick/css/colpick.css"]);
+			[SMEnvironment.GetExtensionsDirectory() + "/SMDesigner/plugins/colpick/js/colpick.js"], [SMEnvironment.GetExtensionsDirectory() + "/SMDesigner/plugins/colpick/css/colpick.css"]);
 
 			// Load designer definition from template
 
@@ -310,6 +310,27 @@ SMDesigner =
 
 				for (var i = 0 ; i < SMDesigner.Resources.Files.length ; i++)
 					cfg.Items.push({ Value: SMDesigner.Resources.Files[i] });
+
+				// Add value if not already found in items.
+				// Selector control also adds missing values to the collection
+				// of items, but if an OnChange handler is registered, it fires.
+				// No need to cause events to fire unnecessarily.
+				if (cfg.Value)
+				{
+					var valueExists = false;
+
+					for (var i = 0 ; i < cfg.Items.length ; i++)
+					{
+						if (cfg.Items[i].Value === cfg.Value)
+						{
+							valueExists = true;
+							break;
+						}
+					}
+
+					if (valueExists === false)
+						cfg.Items.push({ Value: cfg.Value });
+				}
 
 				contrl.Control = new SMDesigner.Controls.Selector(cfg);
 				control = contrl.Control.GetElement();
@@ -920,13 +941,13 @@ SMDesigner =
 			var newTemplateName = templatePath.substring(templatePath.lastIndexOf("/") + 1);
 			var forceAsk = true;
 
-			while ((forceAsk === true) || (newTemplateName !== null && /^[a-z0-9]+$/i.test(newTemplateName) === false))
+			while ((forceAsk === true) || (newTemplateName !== null && newTemplateName !== "" && /^[a-z0-9]+$/i.test(newTemplateName) === false))
 			{
 				newTemplateName = prompt("Download design template:\nEnter new template name (A-Z, 0-9)" + ((forceAsk === false) ? "\n\nError: Invalid template name entered, please try again" : ""), newTemplateName);
 				forceAsk = false;
 			}
 
-			if (newTemplateName === null)
+			if (newTemplateName === null || newTemplateName === "")
 				return;
 
 			// Download template to user
@@ -1399,6 +1420,7 @@ SMDesigner =
 				else if (typeof(val) === "string")
 				{
 					var idx = selector.selectedIndex;
+					var found = false;
 
 					for (var i = 0 ; i < selector.options.length ; i++)
 					{
@@ -1409,8 +1431,18 @@ SMDesigner =
 							if (selector.onchange && selector.selectedIndex !== idx)
 								selector.onchange();
 
+							found = true;
 							break;
 						}
+					}
+
+					if (found === false) // Value set does not exist - add it
+					{
+						selector.add(new Option(val, val));
+						selector.selectedIndex = selector.options.length - 1;
+
+						if (selector.onchange)
+							selector.onchange();
 					}
 				}
 			}
@@ -1994,7 +2026,7 @@ SMDesigner =
 			if (!window.Trianglify && SMDesigner.Graphics.IsBrowserSupported() === true)
 			{
 				Trianglify = {}; // Prevent script from loading multiple times
-				SMResourceManager.LoadScript("extensions/SMDesigner/plugins/trianglify/trianglify.min.js"); // https://cdnjs.cloudflare.com/ajax/libs/trianglify/0.2.0/trianglify.min.js
+				SMResourceManager.LoadScript(SMEnvironment.GetExtensionsDirectory() + "/SMDesigner/plugins/trianglify/trianglify.min.js"); // https://cdnjs.cloudflare.com/ajax/libs/trianglify/0.2.0/trianglify.min.js
 			}
 		},
 

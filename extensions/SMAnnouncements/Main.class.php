@@ -60,7 +60,7 @@ class SMAnnouncements extends SMExtension
 	private function request()
 	{
 		$url = "http://sitemagic.org/external/announcements.php";
-		$license = SMLicenseHandler::GetLicenseKey();
+		$license = null; //SMLicenseHandler::GetLicenseKey();
 
 		// Get general information
 

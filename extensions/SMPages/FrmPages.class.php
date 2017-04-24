@@ -169,14 +169,21 @@ class SMPagesFrmPages implements SMIExtensionForm
 		if ($this->context->GetForm()->PostBack() === false)
 		{
 			if (SMAttributes::GetAttribute("SMPagesSettingsUrlType") === null)
-				$this->lstUrlTypes->SetSelectedValue("UniqueId");
+			{
+				if (SMEnvironment::IsSubSite() === true) // Subsites requires support for .htaccess, so SEO friendly URLs are already enabled - prefer Filename URLs
+					$this->lstUrlTypes->SetSelectedValue("Filename");
+				else
+					$this->lstUrlTypes->SetSelectedValue("UniqueId");
+			}
 			else
+			{
 				$this->lstUrlTypes->SetSelectedValue(SMAttributes::GetAttribute("SMPagesSettingsUrlType"));
+			}
 		}
 
 		$this->chkSeoUrls = new SMInput("SMPagesSeoUrls", SMInputType::$Checkbox);
 
-		if ($this->context->GetForm()->PostBack() === false && SMAttributes::GetAttribute("SMPagesSettingsSeoUrls") === "true")
+		if ($this->context->GetForm()->PostBack() === false && ((SMAttributes::GetAttribute("SMPagesSettingsSeoUrls") === "true") || (SMEnvironment::IsSubSite() === true && SMAttributes::GetAttribute("SMPagesSettingsSeoUrls") === null)))
 			$this->chkSeoUrls->SetChecked(true);
 
 		$this->cmdSaveSettings = new SMLinkButton("SMPagesSaveSettings");

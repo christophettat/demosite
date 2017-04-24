@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/../../SMStringUtilities.classes.php");
-
 /// <container name="gui/SMLinkButton">
 /// 	Class represents an HTML link button which performs an action when clicked.
 /// 	The action commonly performed is triggering post back or client side behaviour.
@@ -33,6 +29,7 @@ class SMLinkButton
 	private $title;
 	private $description;
 	private $icon;
+	private $fontIcon;
 	private $onclick;
 	private $postBack;
 	private $doRender;
@@ -52,6 +49,7 @@ class SMLinkButton
 		$this->title = null;
 		$this->description = null;
 		$this->icon = null;
+		$this->fontIcon = null;
 		$this->onclick = null;
 		$this->postBack = true;
 		$this->doRender = true;
@@ -125,6 +123,24 @@ class SMLinkButton
 	public function GetIcon()
 	{
 		return $this->icon;
+	}
+
+	/// <function container="gui/SMLinkButton" name="SetFontIcon" access="public">
+	/// 	<description> Set Font Awesome icon reference (e.g. fa-search) - http://fontawesome.io/icons </description>
+	/// 	<param name="icon" type="string"> Icon reference </param>
+	/// </function>
+	public function SetFontIcon($icon)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "icon", $icon, SMTypeCheckType::$String);
+		$this->fontIcon = $icon;
+	}
+
+	/// <function container="gui/SMLinkButton" name="GetFontIcon" access="public" returns="string">
+	/// 	<description> Returns Font Awesome icon reference if set, otherwise Null </description>
+	/// </function>
+	public function GetFontIcon()
+	{
+		return $this->fontIcon;
 	}
 
 	/// <function container="gui/SMLinkButton" name="SetOnclick" access="public">
@@ -214,6 +230,9 @@ class SMLinkButton
 
 		if ($this->icon !== null)
 			$output .= "<img src=\"" . $this->icon . "\" alt=\"\" style=\"vertical-align: middle; margin-right: 3px\">";
+
+		if ($this->fontIcon !== null)
+			$output .= "<span class=\"fa " . ((strpos(strtolower($this->fontIcon), "fa-") === false) ? "fa-" : "") . strtolower($this->fontIcon) . "\" style=\"margin-right: 0.3em;\"></span>";
 
 		if ($this->title !== null)
 			$output .= "<a>" . SMStringUtilities::HtmlEncode($this->title) . "</a>"; // Wrapped in link to obtain look and feel

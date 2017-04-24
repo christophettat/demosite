@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-
 /// <container name="base/SMForm">
 /// 	Represents &lt;form&gt; element in web application.
 /// 	The SMForm class is used to generate a global HTML form element in the template,
@@ -77,7 +73,6 @@ class SMForm
 		if ($this->render === false)
 			return "";
 
-		$lang = new SMLanguageHandler();
 		$multipart = (($this->contentType === SMFormContentType::$MultiPart) ? " enctype=\"multipart/form-data\"" : "");
 
 		return "<form id=\"SMForm\" action=\"" . SMStringUtilities::HtmlEncode(SMEnvironment::GetCurrentUrl(true, true)) . "\" method=\"post\"" . $multipart . " style=\"margin: 0px\">";

@@ -323,9 +323,23 @@ class SMMenuItem
 
 	/// <function container="SMMenu/SMMenuItem" name="GetUrl" access="public" returns="string">
 	/// 	<description> Returns item URL </description>
+	/// 	<param name="eval" type="boolean" default="false"> Set True to evaluate/translate tilde (~) to absolute path </param>
 	/// </function>
-	public function GetUrl()
+	public function GetUrl($eval = false)
 	{
+		SMTypeCheck::CheckObject(__METHOD__, "eval", $eval, SMTypeCheckType::$Boolean);
+
+		if ($eval === true && strpos($this->url, "~") === 0)
+		{
+			$path = SMEnvironment::GetRequestPath();
+			$path .= (($path !== "/") ? "/" : ""); // E.g. / or /sites/demo/
+
+			$url = substr($this->url, 1); // Remove tilde
+			$url = ((strpos($url, "/") === 0) ? substr($url, 1) : $url); // Remove any leading slash
+
+			return $path . $url;
+		}
+
 		return $this->url;
 	}
 
@@ -845,7 +859,7 @@ class SMMenuManager
 			$kvc = new SMKeyValueCollection();
 			$kvc["SMMenuItemLevel1 Id"] = "SMMenu" . $child->GetId();
 			$kvc["SMMenuItemLevel1 Title"] = SMStringUtilities::HtmlEncode($child->GetTitle());
-			$kvc["SMMenuItemLevel1 Url"] = SMStringUtilities::HtmlEncode((($child->GetUrl() !== "" && $child->GetUrl() !== "http://") ? $child->GetUrl() : "javascript:void(0)"));
+			$kvc["SMMenuItemLevel1 Url"] = SMStringUtilities::HtmlEncode((($child->GetUrl() !== "" && $child->GetUrl() !== "http://") ? $child->GetUrl(true) : "javascript:void(0)"));
 
 			$kvcs[] = $kvc;
 		}
@@ -870,7 +884,7 @@ class SMMenuManager
 			$kvc = new SMKeyValueCollection();
 			$kvc["SMMenuItemLevel" . (string)$level . " SMMenu" . $parent->GetId() . " Id"] = "SMMenu" . $child->GetId();
 			$kvc["SMMenuItemLevel" . (string)$level . " SMMenu" . $parent->GetId() . " Title"] = SMStringUtilities::HtmlEncode($child->GetTitle());
-			$kvc["SMMenuItemLevel" . (string)$level . " SMMenu" . $parent->GetId() . " Url"] = SMStringUtilities::HtmlEncode((($child->GetUrl() !== "" && $child->GetUrl() !== "http://") ? $child->GetUrl() : "javascript:void(0)"));
+			$kvc["SMMenuItemLevel" . (string)$level . " SMMenu" . $parent->GetId() . " Url"] = SMStringUtilities::HtmlEncode((($child->GetUrl() !== "" && $child->GetUrl() !== "http://") ? $child->GetUrl(true) : "javascript:void(0)"));
 
 			$kvcs[] = $kvc;
 		}

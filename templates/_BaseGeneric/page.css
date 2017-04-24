@@ -20,7 +20,9 @@ div.TPLContent
 	/* Make contained elements with top/bottom margins expand the content area rather than
 	   causing spacing above and below it. Example: http://jsfiddle.net/o1vkar7c/2/
 	   Notice: This may hide box-shadows, e.g. on Cards on mobile devices! */
-	overflow: auto;
+	/*overflow: auto;*/ /* Not working well - hides box-shadow and Fit.UI DropDown */
+	padding-top: 0.1px;
+	padding-bottom: 0.1px;
 }
 html.Basic.SMPagesViewer body:before,
 html.Basic.SMPagesViewer body:after,
@@ -31,7 +33,9 @@ html.SMPagesEditor.SMPagesContentPage body:after
 	   but it does for pseudo elements before and after body element. */
 	content: "";
 	display: block;
-	overflow: auto;
+	/*overflow: auto;*/ /* Not working well - hides box-shadow and Fit.UI DropDown */
+	padding-top: 0.1px;
+	padding-bottom: 0.1px;
 }
 html.Normal div.SMExtension,
 html.Basic.SMPagesViewer div.SMExtension

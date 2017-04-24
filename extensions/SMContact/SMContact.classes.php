@@ -63,6 +63,7 @@ class SMContactFieldTypes
 	public static $Textbox = "Textbox";
 	public static $Checkbox = "Checkbox";
 	public static $Email = "Email";
+	public static $Attachment = "Attachment";
 }
 
 class SMContactField

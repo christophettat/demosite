@@ -28,4 +28,5 @@
 	<entry key="UploadWait" value="Uploading, please wait.." />
 	<entry key="UploadSucceeded" value="File uploaded" />
 	<entry key="UploadError" value="An error occured during transfer, please try again" />
+	<entry key="ValidFileTypes" value="Valid file types" />
 </entries>

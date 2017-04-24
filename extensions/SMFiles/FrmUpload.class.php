@@ -49,10 +49,19 @@ class SMFilesFrmUpload implements SMIExtensionForm
 			return;
 		}
 
-		$uploadStatus = SMFileSystem::HandleFileUpload($this->txtUpload->GetClientId(), $uploadPath, "/^[a-zA-Z0-9\xC0-\xFF. '_-]/"); // RegEx copied from ValueRestriction::$Filename (see SMStringUtilities)
+		$cfg = SMEnvironment::GetConfiguration();
+		$extensions = $cfg->GetEntry("FileExtensionFilter");
+		$extensions = (($extensions !== null) ? str_replace(" ", "", str_replace(",", ";", $extensions)) : null);
+
+		$uploadStatus = SMFileSystem::HandleFileUpload($this->txtUpload->GetClientId(), $uploadPath, "/^[a-zA-Z0-9\xC0-\xFF. '_-]/", (($extensions !== null) ? explode(";", $extensions) : array())); // RegEx copied from ValueRestriction::$Filename (see SMStringUtilities)
 
 		if ($uploadStatus === false)
+		{
 			$this->error = $this->lang->GetTranslation("UploadError");
+
+			if ($extensions !== null)
+				$this->error .= "<br><br>" . $this->lang->GetTranslation("ValidFileTypes") . ": " . str_replace(";", ", ", $extensions);
+		}
 	}
 
 	public function Render()

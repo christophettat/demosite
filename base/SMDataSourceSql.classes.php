@@ -1,10 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMSqlCommon.classes.php");
-
 // SQL based DataSource is case insensitive on both DataSource names and attributes.
 // It can handle special characters such as the Euro sign (although SMCMS is optimized for ISO-8859-1).
 // It is not dynamic - columns/fields must be defined in table definition.
@@ -37,8 +32,7 @@ class SMDataSourceCacheItemSql extends SMDataSourceCacheItem
 
 	public function SetInternalDataSource($connection)
 	{
-		SMTypeCheck::CheckObject(__METHOD__, "connection", $connection, SMTypeCheckType::$Resource);
-
+		SMTypeCheck::CheckObject(__METHOD__, "connection", $connection, "MySQLi");
 		$this->connection = $connection;
 	}
 
@@ -125,7 +119,7 @@ class SMDataSource implements SMIDataSource
 
 			foreach ($row as $key => $value)
 				if ($value !== null)
-					$kvc[$key] = $value;
+					$kvc[strtolower($key)] = $value;
 
 			$kvcs[] = $kvc;
 		}
@@ -435,7 +429,7 @@ class SMDataSource implements SMIDataSource
 
 		// Get connection info
 
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$cfg = SMEnvironment::GetConfiguration();
 		$connectionStr = $cfg->GetEntry("DatabaseConnection");
 
 		if ($connectionStr === null)
@@ -466,7 +460,15 @@ class SMDataSource implements SMIDataSource
 			$connection = mysqli_connect($host, $connectionInfo[2], $connectionInfo[3], "");
 
 		if ($connection === false)
-			throw new Exception("Unable to connect to database server '" . $connectionInfo[0] . "'");
+		{
+			// Do NOT throw exception - the stack trace includes a warning
+			// emitted from mysqli_connect(..) containing the login information,
+			// which is caught by error handler defined in SMLog.class.php
+			// and displayed in the browser.
+
+			echo "Unable to connect to database server '" . $connectionInfo[0] . "'";
+			exit;
+		}
 
 		$result = mysqli_set_charset($connection, "latin1"); // Latin1 actually means CP-1252 (also known as Windows-1252) within MySQL, not ISO-8859-1 as one would expect - fortunately it's compatible with characters from ISO-8859-1 - http://dev.mysql.com/doc/refman/5.5/en/charset-charsets.html
 
@@ -569,8 +571,18 @@ class SMDataSource implements SMIDataSource
 		return implode(" , ", $columns);
 	}
 
-	private function escapeData(SMKeyValueCollection $data)
+	private function escapeData(SMKeyValueCollection $record)
 	{
+		// Transform KeyValue Collection into Case Insensitive collection
+		// to make sure mixed casing does not prevent some fields from being escaped.
+
+		$data = new SMKeyValueCollection(SMKeyValueCollectionType::$CaseInsensitive);
+
+		foreach ($record as $key => $value)
+			$data[$key] = $value;
+
+		// Escape data
+
 		if ($this->ds->GetAutoEscapeData() === false)
 			return $data;
 

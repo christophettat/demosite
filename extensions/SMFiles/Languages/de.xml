@@ -28,4 +28,5 @@
 	<entry key="UploadWait" value="Hochladen, bitte warten.." />
 	<entry key="UploadSucceeded" value="Datei hochgeladen" />
 	<entry key="UploadError" value="Ein Fehler ist beim Versenden aufgetreten, bitte nochmal versuchen" />
+	<entry key="ValidFileTypes" value="Gültige Dateitypen" />
 </entries>

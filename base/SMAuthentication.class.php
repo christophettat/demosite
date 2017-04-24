@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-
 /// <container name="base/SMAuthentication">
 /// 	Class provides functionality used to switch between administration mode
 /// 	and ordinary mode. Extensions may use this class to check whether user
@@ -74,7 +70,7 @@ class SMAuthentication
 
 	private static function getUserInfo()
 	{
-		$config = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$config = SMEnvironment::GetConfiguration();
 		$usr = $config->GetEntry("Username");
 		$psw = $config->GetEntry("Password");
 

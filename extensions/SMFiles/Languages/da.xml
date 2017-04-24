@@ -28,4 +28,5 @@
 	<entry key="UploadWait" value="Overfører, vent venligst.." />
 	<entry key="UploadSucceeded" value="Fil overført" />
 	<entry key="UploadError" value="Der opstod en fejl i overførslen, prøv venligst igen" />
+	<entry key="ValidFileTypes" value="Gyldige filtyper" />
 </entries>

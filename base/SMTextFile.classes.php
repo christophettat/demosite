@@ -1,7 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMTextFileWriteMode">
 /// 	Enum representing write mode
 /// </container>

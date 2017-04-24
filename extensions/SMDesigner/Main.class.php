@@ -94,9 +94,24 @@ class SMDesigner extends SMExtension
 
 		$res = array();
 
+		if (SMFileSystem::FolderExists($folder) === false) // Might not exist
+			return $res;
+
+		$subSiteDir = SMEnvironment::GetSubsiteDirectory(); // Null for main site, sites/xyz for a subsite
+
 		$files = SMFileSystem::GetFiles($folder);
 		foreach ($files as $file)
-			$res[] = "\"" . $folder . "/" . $file . "\"";
+		{
+			// Removing subsite path to make sure files are always referenced the same on main site and subsites.
+			// Main site : files/images/test.png
+			// Subsite   : sites/demo/files/images/test.png => files/images/test.pnp
+			// Without this, templates would not be portable from a subsite to a main site.
+			// Notice that the files directory may be either separated from the main site (e.g. sites/xyz/files),
+			// or shared with main site (files). The code below makes sure to only change a file path if it starts
+			// with a subsite URL (e.g. sites/xyz).
+
+			$res[] = "\"" . (($subSiteDir !== null && strpos($folder, $subSiteDir) === 0) ? substr($folder, strlen($subSiteDir) + 1) : $folder) . "/" . $file . "\"";
+		}
 
 		$subFolders = SMFileSystem::GetFolders($folder);
 		foreach ($subFolders as $subFolder)

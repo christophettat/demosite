@@ -1,10 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMForm.classes.php");
-require_once(dirname(__FILE__) . "/SMTemplate.classes.php");
-require_once(dirname(__FILE__) . "/SMExtensionManager.class.php");
-
 /// <container name="base/SMContext">
 /// 	An instance of SMContext is passed to running extensions, allowing easy
 /// 	access to the underlaying design template and the form element (after the Init stage).

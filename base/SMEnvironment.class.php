@@ -1,12 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-require_once(dirname(__FILE__) . "/SMTemplate.classes.php");
-require_once(dirname(__FILE__) . "/SMAttributes.class.php");
-
 /// <container name="base/SMEnvironment">
 /// 	Static functions provide access to the $_SERVER array, query string
 /// 	parameters, form data after post back, the cookie store and session store.
@@ -21,6 +14,12 @@ class SMEnvironment
 {
 	private static $masterTemplate = null;
 	private static $formInstance = null;
+
+	public static function Initialize() // Invoked by SMController
+	{
+		self::initializeCookies();
+		self::initializeSessions();
+	}
 
 	/// <function container="base/SMEnvironment" name="GetEnvironmentValue" access="public" static="true" returns="object">
 	/// 	<description>
@@ -81,6 +80,37 @@ class SMEnvironment
 		return $_POST;
 	}
 
+	/// <function container="base/SMEnvironment" name="GetJsonData" access="public" static="true" returns="array">
+	/// 	<description>
+	/// 		Get raw JSON data set to server via POST without a post collection key.
+	/// 		Data is returned as a multi dimentional array
+	/// 	</description>
+	/// </function>
+	public static function GetJsonData()
+	{
+		$data = file_get_contents("php://input"); // Read JSON data sent to server without a POST key
+		$jsonArray = json_decode($data, true); // XMLHttpRequest always sends UTF-8 which is also what json_decode(..) expects
+		$jsonArray = self::decodeArrayFromUtf8ToLatin1($jsonArray); // Convert data to ISO-8859-1
+		return $jsonArray;
+	}
+
+	private static function decodeArrayFromUtf8ToLatin1($arr)
+	{
+		foreach ($arr as $key => $value)
+		{
+			if (is_array($value) === true)
+			{
+				$arr[$key] = self::decodeArrayFromUtf8ToLatin1($value);
+			}
+			else if (is_string($value) === true)
+			{
+				$arr[$key] = utf8_decode($value);
+			}
+		}
+
+		return $arr;
+	}
+
 	// GET data (query string)
 
 	/// <function container="base/SMEnvironment" name="GetQueryValue" access="public" static="true" returns="object">
@@ -127,6 +157,82 @@ class SMEnvironment
 	}
 
 	// Sessions
+
+	private static function initializeSessions()
+	{
+		// Log warning if session.auto_start is enabled
+
+		if (isset($_SESSION) === true)
+		{
+			// Unable to establish separate session for current installation since session
+			// has already been started, most likely because session.auto_start is enabled.
+			// This will cause sites to share session data. Changes on one site might influence
+			// data or behaviour on another site.
+			// Theoretically it also poses a security problem if one site is supposed to be
+			// completely isolated from another site.
+			// If a user logges into Site A and Site B, and Site B contains malicious code,
+			// it will be able to steal session data from Site A.
+			// However, this is not a problem if two different computers (or even browsers)
+			// are used, since sessions are separated by (contained in) browsers.
+			// It would be a problem if the session ID was exposed though, since that particular
+			// session ID would then grant access to session data from multiple sites.
+
+			if (SMAttributes::GetAttribute("SMEnvironmentSessionAutoStartWarning") === null) // Make sure warning is only written to log once
+			{
+				SMAttributes::SetAttribute("SMEnvironmentSessionAutoStartWarning", "true");
+				SMLog::Log(__FILE__, __LINE__, "WARNING: session.auto_start is enabled, preventing Sitemagic from isolating session data between sites and subsites");
+			}
+
+			return;
+		}
+
+		// Establishing a separete session for the given site.
+		// This requires that either a unique session name (session_name($name)) or session ID (session_id($id))
+		// is set. The given value must be static to allow the session to be restored between postbacks.
+		// Assigning a new session ID has the drawback of restoring the session, even if the browser has been fully restarted,
+		// at least for the life time of the session. The session ID is simply a pointer to a session file on the server.
+		// Setting the session ID will instruct PHP to load any data from the given session file if it still exists.
+		// Assigning a new session name is what we want since it will cause PHP to generate a new unique session ID,
+		// if the session cookie with the specified session name is not yet available, which it will not be on the
+		// first initial page load.
+		//
+		// Basically, what PHP does on page load to establish the session, is something like this:
+		//
+		// if (!isset($_COOKIE["PHPSESSID"])
+		// {
+		//     // No session cookie is available, so this is the initial page load.
+		//     // Generate new session ID and store it in a browser cookie. Cookies are
+		//     // automatically sent to the server on requests, and PHP exposes them using the $_COOKIE array.
+		//
+		//     $id = generateSomeId();
+		//     setcookie("PHPSESSID", $id, 0, "/"); // Timeout of 0 = session cookie that expires when browser is closed
+		//     $_COOKIE["PHPSESSID"] = $id;
+		// }
+		//
+		// session_id($_COOKIE["PHPSESSID"]);
+		//
+		// We will let PHP work its magic, and simply make sure the site is given a unique session name (PHPSESSID is replaced with another name).
+		// That way we get a site specific session that is automatically renewed if the browser is restarted.
+
+		$path = self::GetRequestPath();
+		$sessionName = SMAttributes::GetAttribute("SMEnvironmentSessionName" . $path); // Path is part of key to make sure a new unique session name is generated if site is copied/moved/renamed
+
+		if ($sessionName === null)
+		{
+			// Generate random session name.
+			// Theoretically (but extremely unlikely) two sites could potentially
+			// be assigned the same session name. However, that would only be a problem
+			// if the two sites were accessed from the same browser, which is even more unlikely.
+			// Sessions are bound to browsers, as long as the session ID is not exposed
+			// and used in session hijacking.
+
+			$sessionName = "SMSESSION" . SMRandom::CreateText(16);
+			SMAttributes::SetAttribute("SMEnvironmentSessionName" . $path, $sessionName);
+		}
+
+		session_name($sessionName);
+		session_start(); // Start session - make $_SESSION available
+	}
 
 	/// <function container="base/SMEnvironment" name="GetSessionValue" access="public" static="true" returns="object">
 	/// 	<description>
@@ -196,6 +302,37 @@ class SMEnvironment
 
 	// Cookies
 
+	private static function initializeCookies()
+	{
+		// Remove cookie prefix from $_COOKIE array.
+		// Prefix is used to encapsulate cookies on a root site,
+		// preventing them from becoming accessible on subsites,
+		// and cause naming conflicts.
+
+		// Example:
+		// "SM#/#Name" => "James Jackson"
+		// "SM#/#ViewMode" => "Normal"
+		// Becomes:
+		// "Name" => "Sames Jackson"
+		// "ViewMode" => "Normal"
+
+		if (self::GetRequestPath() === "/") // Example: / OR /Sitemagic OR /Sitemagic/sites/demo
+		{
+			$internalKeyPrefix = "SM#/#";
+
+			foreach ($_COOKIE as $key => $value)
+			{
+				if (strpos($key, $internalKeyPrefix) === 0)
+				{
+					// Remove cookie with a key such as "SM#/#Name" and re-add it with a key such as "Name".
+					// Notice: This change remains on the server and is not pushed to the client since setcookie(..) is never called.
+					unset($_COOKIE[$key]);
+					$_COOKIE[substr($key, strlen($internalKeyPrefix))] = $value;
+				}
+			}
+		}
+	}
+
 	/// <function container="base/SMEnvironment" name="GetCookieValue" access="public" static="true" returns="object">
 	/// 	<description>
 	/// 		Get cookie value - returns Null if not found.
@@ -224,7 +361,7 @@ class SMEnvironment
 	public static function SetCookieValue(SMKeyValue $data)
 	{
 		SMLog::LogDeprecation(__CLASS__, __FUNCTION__, __CLASS__, "SetCookie");
-		setcookie($data->GetKey(), $data->GetValue());
+		self::SetCookie($data->GetKey(), $data->GetValue(), 0); // Notice expiration of 0 = expires when session ends
 	}
 
 	// DEPRECATED - use DestoryCookie instead
@@ -232,7 +369,7 @@ class SMEnvironment
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "key", $key, SMTypeCheckType::$String);
 		SMLog::LogDeprecation(__CLASS__, __FUNCTION__, __CLASS__, "DestroyCookie");
-		unset($_COOKIE[$key]);
+		self::DestroyCookie($key);
 	}
 
 	public static function GetCookieData()
@@ -244,7 +381,10 @@ class SMEnvironment
 	/// 	<description> Store value in cookie store </description>
 	/// 	<param name="key" type="string"> Unique key identifying value </param>
 	/// 	<param name="value" type="string"> Value to store with specified key </param>
-	/// 	<param name="expireSeconds" type="integer"> Expiration time in seconds </param>
+	/// 	<param name="expireSeconds" type="integer">
+	/// 		Expiration time in seconds. A value of 0 makes it
+	/// 		a session cookie, a value of -1 removes the cookie.
+	/// 	</param>
 	/// </function>
 	public static function SetCookie($key, $value, $expireSeconds) // Replaces SetCookieValue
 	{
@@ -252,7 +392,23 @@ class SMEnvironment
 		SMTypeCheck::CheckObject(__METHOD__, "value", $value, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "expireSeconds", $expireSeconds, SMTypeCheckType::$Integer);
 
-		setcookie($key, $value, time() + $expireSeconds, "/");
+		$path = self::GetRequestPath();
+		$internalKey = $key;
+
+		if ($path === "/")
+			$internalKey = "SM#/#" . $key; // Prevent conflicts with cookies on subsites - NOTICE: prefix MUST be identical to prefix used in SMClient.js client side!
+
+		if ($path !== "/") // e.g. /Sitemagic/sites/demo
+			$path .= "/";  // Must end with a slash to be compatible with path set by SMClient.js
+
+		// Set cookie client side (here we need the special internal key for cookies on root site to avoid conflicts with subsite cookies)
+		setcookie($internalKey, $value, (($expireSeconds > 0) ? time() + $expireSeconds : $expireSeconds), $path);
+
+		// Set cookie server side
+		if ($expireSeconds >= 0)
+			$_COOKIE[$key] = $value;
+		else
+			unset($_COOKIE[$key]);
 	}
 
 	/// <function container="base/SMEnvironment" name="DestroyCookie" access="public" static="true">
@@ -262,8 +418,7 @@ class SMEnvironment
 	public static function DestroyCookie($key) // Replaces DestroyCookieValue
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "key", $key, SMTypeCheckType::$String);
-		unset($_COOKIE[$key]);
-		setcookie($key, null, -1, "/");
+		self::SetCookie($key, "", -1);
 	}
 
 	// Other functions
@@ -278,21 +433,75 @@ class SMEnvironment
 		$url .= ((isset($_SERVER["HTTPS"]) === true && $_SERVER["HTTPS"] !== "off") ? "s://" : "://");
 		$url .= $_SERVER["SERVER_NAME"];
 		$url .= (($_SERVER["SERVER_PORT"] !== "80") ? ":" . $_SERVER["SERVER_PORT"] : "");
-		$url .= substr($_SERVER["PHP_SELF"], 0, strrpos($_SERVER["PHP_SELF"], "/"));
+		$url .= substr($_SERVER["REQUEST_URI"], 0, strrpos($_SERVER["REQUEST_URI"], "/"));
+		//$url .= substr($_SERVER["PHP_SELF"], 0, strrpos($_SERVER["PHP_SELF"], "/")); // Not reliable when URL Rewriting is used (e.g. sub.domain.com => domain.com/sites/sub)
 
 		return $url; // e.g. http://www.domain.com/demo/cms
 	}
 
 	/// <function container="base/SMEnvironment" name="GetInstallationPath" access="public" static="true" returns="string">
-	/// 	<description> Get path to installation on server - e.g. / if installed in root, or /demo if installed to a sub folder </description>
+	/// 	<description>
+	/// 		DEPRECATED - use GetRequestPath() instead. This function
+	/// 		might return incorrect results when URL Rewriting is in use.
+	/// 		Get path to installation on server - e.g. / if installed in root, or /demo if installed to a sub folder.
+	/// 		For a subsite called Blog, installed in /Sitemagic, the path returned would be /Sitemagic/sites/Blog.
+	/// 	</description>
 	/// </function>
 	public static function GetInstallationPath()
 	{
+		// Function has been marked as deprecated - it produces unreliable results
+		// when URL rewriting is used to map e.g. test.domain.com to domain.com/sites/test.
+		SMLog::LogDeprecation(__CLASS__, __FUNCTION__, __CLASS__, "GetRequestPath");
+
 		// Returns "/" if installed in root of web host.
 		// Returns "/folder/subfolder" if installed in /folder/subfolder.
+		// Returns "/folder/subfolder/sites/demo" if subsite is installed in /folder/subfolder/sites/demo.
+
+		// PHP_SELF is unreliable when URL Rewriting is used,
+		// especially with subdomains where e.g. test.domain.com maps to domain.com/test.
+		// Requesting test.domain.com results in PHP_SELF returning /index.php while requesting
+		// a page such as test.domain.com/webcome.html results in PHP_SELF returning /test/index.php.
+		// Use GetRequestPath() instead for reliable results !
 
 		$lastIndex = strrpos($_SERVER["PHP_SELF"], "/");
 		return (($lastIndex > 0) ? substr($_SERVER["PHP_SELF"], 0, $lastIndex) : "/");
+	}
+
+	/// <function container="base/SMEnvironment" name="GetRequestPath" access="public" static="true" returns="string">
+	/// 	<description>
+	/// 		Get path under which application is requested, e.g. / if installed in root, or /demo if installed to a folder
+	/// 	</description>
+	/// </function>
+	public static function GetRequestPath()
+	{
+		// Returns "/" if installed in root of web host.
+		// Returns "/folder/subfolder" if installed in /folder/subfolder.
+		// Returns "/folder/subfolder/sites/demo" if subsite is installed in /folder/subfolder/sites/demo.
+		// Returns "/" if installed to /sites/test but accessed using test.domain.com subdomain
+
+		$path = $_SERVER["REQUEST_URI"]; // E.g. / or /index.php[?..] or /Test.html
+		$path = ((strpos($path, "?") !== false) ? substr($path, 0, strpos($path, "?")) : $path); // Remove URL arguments if defined
+		$path = substr($path, 0, strrpos($path, "/"));	// Remove last slash and everything after it, resulting in e.g. "" (empty) or / or /sites/demo
+		return (($path !== "") ? $path : "/");
+	}
+
+	/// <function container="base/SMEnvironment" name="GetDocumentRoot" access="public" static="true" returns="string">
+	/// 	<description>
+	/// 		Get absolute path to document root, e.g. /var/www/domain.com/web (installed to root) or
+	/// 		/var/www/domain.com/web/Sitemagic/sites/demo (demo subsite).
+	/// 	</description>
+	/// </function>
+	public static function GetDocumentRoot()
+	{
+		//$root = $_SERVER["DOCUMENT_ROOT"];
+		//$root = str_replace("\\", "/", $root); // May contain backslashes on Windows Server
+		//$root = ((strrpos($root, "/") === strlen($root) - 1) ? substr($root, 0, strlen($root) - 1) : $root); // Remove trailing slash if found (better safe than sorry)
+
+		$root = $_SERVER["SCRIPT_FILENAME"];			// E.g. /var/www/domain.com/web/Sitemagic/index.php
+		$root = str_replace("\\", "/", $root);			// In case backslashes are used on Windows Server
+		$root = substr($root, 0, strrpos($root, "/"));	// Remove last slash and filename (e.g. /index.php)
+
+		return $root;
 	}
 
 	/// <function container="base/SMEnvironment" name="GetCurrentUrl" access="public" static="true" returns="string">
@@ -324,7 +533,7 @@ class SMEnvironment
 		{
 			// Example: index.php?SMExt=SMLogin
 
-			$path = SMEnvironment::GetInstallationPath(); // Example: / for root, /demo/cms for sub folders
+			$path = SMEnvironment::GetRequestPath(); // Example: / for root, /demo/cms for sub folders
 			$uri = SMEnvironment::GetEnvironmentValue("REQUEST_URI"); // Example: / or /index.php?SMExt=SMLogin or /demo/cms/index.php?SMExt=SMLogin
 
 			// Append slash (/) to path if contained in sub folder to match URI format
@@ -431,19 +640,54 @@ class SMEnvironment
 	/// </function>
 	public static function GetDebugEnabled()
 	{
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$cfg = self::GetConfiguration();
 		return ($cfg->GetEntry("Debug") !== null && strtolower($cfg->GetEntry("Debug")) === "true");
 	}
 
+	/// <function container="base/SMEnvironment" name="GetConfiguration" access="public" static="true" returns="SMConfiguration">
+	/// 	<description> Returns system configuration (config.xml.php) </description>
+	/// 	<param name="writable" type="boolean" default="false"> Set True to have writable configuration returned </param>
+	/// </function>
+	public static function GetConfiguration($writable = false)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "writable", $writable, SMTypeCheckType::$Boolean);
+
+		$root = self::GetSubsiteDirectory();
+		return new SMConfiguration(dirname(__FILE__) . "/../" . (($root !== null) ? $root . "/" : "") . "config.xml.php", $writable);
+	}
+
 	// Directory information
+
+	// NOTICE: The following directories does not have getter functions, since
+	// they are only referenced by the framework and GUI controls: /base, /sites
+
+	// To rename a folder (data, extensions, files, images, or templates), update the
+	// relevant getter function below, and make appropriate updates to .htaccess files,
+	// which reference these folders by their names (hardcoded).
+	// It will also be neccessary to map requests to old folder names to new folder names
+	// to ensure backward compatibility. See example in root .htaccess file.
+	// Also CSS files (e.g. SMPages/editor.css and _BaseGeneric/mobile.css) are
+	// likely to depend on images/fonts being accessible from hardcoded folders.
 
 	/// <function container="base/SMEnvironment" name="GetFilesDirectory" access="public" static="true" returns="string">
 	/// 	<description> Get name of files folder found in root of web application folder </description>
 	/// </function>
 	public static function GetFilesDirectory()
 	{
-		return "files";
+		if (self::$filesDir === null)
+		{
+			$subSite = self::getSubSite();
+
+			if ($subSite !== null && SMFileSystem::FileExists("sites/" . $subSite . "/files/.htaccess") === false)
+				self::$filesDir = "sites/" . $subSite . "/files";
+			else
+				self::$filesDir = "files";
+
+		}
+
+		return self::$filesDir;
 	}
+	private static $filesDir = null;
 
 	/// <function container="base/SMEnvironment" name="GetExtensionsDirectory" access="public" static="true" returns="string">
 	/// 	<description> Get name of extensions folder found in root of web application folder </description>
@@ -458,12 +702,8 @@ class SMEnvironment
 	/// </function>
 	public static function GetDataDirectory()
 	{
-		return "data";
-	}
-
-	public static function GetRootDirectory()
-	{
-		return "";
+		$subSite = self::getSubSite();
+		return (($subSite !== null) ? "sites/" . $subSite . "/" : "") . "data";
 	}
 
 	/// <function container="base/SMEnvironment" name="GetImagesDirectory" access="public" static="true" returns="string">
@@ -479,8 +719,38 @@ class SMEnvironment
 	/// </function>
 	public static function GetTemplatesDirectory()
 	{
-		return "templates";
+		if (self::$templatesDir === null)
+		{
+			$subSite = self::getSubSite();
+
+			if ($subSite !== null && count(SMFileSystem::GetFolders(dirname(__FILE__) . "/../sites/" . $subSite . "/templates")) > 0)
+				self::$templatesDir = "sites/" . $subSite . "/templates";
+			else
+				self::$templatesDir = "templates";
+		}
+
+		return self::$templatesDir;
 	}
+	private static $templatesDir = null;
+
+	/// <function container="base/SMEnvironment" name="GetSubsiteDirectory" access="public" static="true" returns="string">
+	/// 	<description> Get path to subsite directory (e.g. sites/demo) - returns Null if application is not running under a subsite </description>
+	/// </function>
+	public static function GetSubsiteDirectory()
+	{
+		$subSite = self::getSubSite();
+		return (($subSite !== null) ? "sites/" . $subSite : null);
+	}
+
+	/// <function container="base/SMEnvironment" name="GetSubSites" access="public" static="true" returns="string[]">
+	/// 	<description> Get names of all subsites </description>
+	/// </function>
+	public static function GetSubSites()
+	{
+		return SMFileSystem::GetFolders(dirname(__FILE__) . "/../sites");
+	}
+
+	// Template
 
 	/// <function container="base/SMEnvironment" name="GetMasterTemplate" access="public" static="true" returns="SMTemplate">
 	/// 	<description> Get master template </description>
@@ -495,6 +765,8 @@ class SMEnvironment
 		self::$masterTemplate = $tpl;
 	}
 
+	// Form
+
 	/// <function container="base/SMEnvironment" name="GetFormInstance" access="public" static="true" returns="SMForm">
 	/// 	<description> Get form element instance </description>
 	/// </function>
@@ -506,6 +778,42 @@ class SMEnvironment
 	public static function SetFormInstance(SMForm $form)
 	{
 		self::$formInstance = $form;
+	}
+
+	public static function IsSubSite()
+	{
+		return (self::getSubSite() !== null);
+	}
+
+	// Server configuration
+
+	/// <function container="base/SMEnvironment" name="GetMaxUploadSize" access="public" static="true" returns="integer">
+	/// 	<description> Get maximum file upload size in bytes - a value of 0 indicates that file uploading is not possible </description>
+	/// </function>
+	public static function GetMaxUploadSize()
+	{
+		// NOTICE: Upload capabilities is also determined by max_file_uploads (number of file uploads allowed).
+		// Also notice that post_max_size should always be greater than upload_max_filesize.
+		// Otherwise a file with a size of exactly 2 MB would leave no space for additional POST data,
+		// potentially preventing data from being processed.
+
+		$enabledStr = self::getPhpConfig("file_uploads");
+
+		if ($enabledStr === null || ($enabledStr !== "1" && strtolower($enabledStr) !== "on"))
+			return 0; // Uploads not allowed
+
+		// Upload is enabled - max size can now be determined
+
+		$maxUploadSizeStr = self::getPhpConfig("upload_max_filesize");
+		$maxPostSizeStr = self::getPhpConfig("post_max_size");
+
+		if ($maxUploadSizeStr === null || $maxPostSizeStr === null)
+			throw new Exception("Unable to determine Max Upload Size");
+
+		$maxUploadSize = self::getBytesFromPhpConfig($maxUploadSizeStr);
+		$maxPostSize = self::getBytesFromPhpConfig($maxPostSizeStr);
+
+		return (($maxPostSize < $maxUploadSize) ? $maxPostSize : $maxUploadSize);
 	}
 
 	// Helper functions
@@ -527,6 +835,47 @@ class SMEnvironment
 			throw new Exception("Security exception - value of " . $arrName . "['" . $key . "'] = '" . $val . "' is in conflict with value restriction '" . $restriction . "'" . ((count($exceptions) > 0) ? " and the following characters: " . implode("", $exceptions) : ""));
 
 		return $val;
+	}
+
+	private static function getSubSite()
+	{
+		if (self::$subSite === null)
+		{
+			$docRoot = self::GetDocumentRoot(); // E.g. /var/www/domain.com/web or /var/www/domain.com/web/sites/demo
+
+			if (SMFileSystem::FolderExists($docRoot . "/base") === false) // Subsite, if base folder is not found in installation path
+				self::$subSite = substr($docRoot, strrpos($docRoot, "/") + 1);
+			else // Main site
+				self::$subSite = "";
+		}
+
+		return ((self::$subSite !== "") ? self::$subSite : null);
+	}
+	private static $subSite = null;
+
+	private static function getPhpConfig($key)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "key", $key, SMTypeCheckType::$String);
+
+		$res = ini_get($key); // Returns string value on success or an empty string for Null values - returns False if the option does not exist
+
+		if ($res === false)
+			throw new Exception("PHP server configuration '" . $key . "' does not exist");
+
+		return (($res !== "") ? $res : null);
+	}
+
+	private static function getBytesFromPhpConfig($sizeStr) // e.g. 1024 or 1KB or 4MB or 1G
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "sizeStr", $sizeStr, SMTypeCheckType::$String);
+
+		switch (substr($sizeStr, -1))
+		{
+			case 'K': case 'k': return (int)substr($sizeStr, 0, -1) * 1024;
+			case 'M': case 'm': return (int)substr($sizeStr, 0, -1) * 1048576;
+			case 'G': case 'g': return (int)substr($sizeStr, 0, -1) * 1073741824;
+			default: return (int)$sizeStr;
+		}
 	}
 }
 

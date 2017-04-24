@@ -1,15 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMRequest.classes.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/SMTemplate.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-require_once(dirname(__FILE__) . "/SMLanguageHandler.class.php");
-
 /// <container name="base/SMExtensionManager">
 /// 	Class responsible for handling and executing extensions.
 ///
@@ -57,7 +47,7 @@ class SMExtensionManager
 	public static function GetExtensionPath($extension)
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "extension", $extension, SMTypeCheckType::$String);
-		return "extensions/" . $extension;
+		return SMEnvironment::GetExtensionsDirectory() . "/" . $extension;
 	}
 
 	/// <function container="base/SMExtensionManager" name="GetExtensionUrl" access="public" static="true" returns="string">
@@ -162,7 +152,7 @@ class SMExtensionManager
 		SMTypeCheck::CheckObject(__METHOD__, "throwExceptionIfMissing", $throwExceptionIfMissing, SMTypeCheckType::$Boolean);
 		SMTypeCheck::CheckObject(__METHOD__, "allowDisabled", $allowDisabled, SMTypeCheckType::$Boolean);
 
-		$path = dirname(__FILE__) . "/../extensions/" . $extension . "/" . $file;
+		$path = dirname(__FILE__) . "/../" . SMEnvironment::GetExtensionsDirectory() . "/" . $extension . "/" . $file;
 
 		if (self::ExtensionExists($extension, $allowDisabled) === false || SMFileSystem::FileExists($path) === false)
 		{
@@ -223,7 +213,7 @@ class SMExtensionManager
 
 		// Read extensions enabled
 
-		$conf = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php", true);
+		$conf = SMEnvironment::GetConfiguration(true);
 		$extensionsStr = $conf->GetEntry("ExtensionsEnabled");
 
 		// Enable or disable extension
@@ -278,7 +268,7 @@ class SMExtensionManager
 	/// </function>
 	public static function GetDefaultExtension()
 	{
-		$config = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$config = SMEnvironment::GetConfiguration();
 		return $config->GetEntry("DefaultExtension");
 	}
 
@@ -334,7 +324,7 @@ class SMExtensionManager
 			return null;
 
 		$lang = new SMLanguageHandler($extension);
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../extensions/" . $extension . "/metadata.xml");
+		$cfg = new SMConfiguration(dirname(__FILE__) . "/../" . SMEnvironment::GetExtensionsDirectory() . "/" . $extension . "/metadata.xml");
 
 		$data = new SMKeyValueCollection();
 		$data["Title"] = self::getMetaDataEntry($cfg, $lang, "Title");
@@ -354,7 +344,7 @@ class SMExtensionManager
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "extension", $extension, SMTypeCheckType::$String);
 
-		$extensionController = "extensions/" . $extension . "/Main.class.php";
+		$extensionController = SMEnvironment::GetExtensionsDirectory() . "/" . $extension . "/Main.class.php";
 
 		if (SMFileSystem::FileExists($extensionController) === false)
 			return null;
@@ -404,9 +394,9 @@ class SMExtensionManager
 		{
 			self::$extensions = array();
 
-			$extensions = SMFileSystem::GetFolders(dirname(__FILE__) . "/../extensions");
+			$extensions = SMFileSystem::GetFolders(dirname(__FILE__) . "/../" . SMEnvironment::GetExtensionsDirectory());
 
-			$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+			$cfg = SMEnvironment::GetConfiguration();
 			$configExtensionsEnabled = $cfg->GetEntry("ExtensionsEnabled");
 			$extensionsEnabled = (($configExtensionsEnabled === null || $configExtensionsEnabled === "") ? array() : explode(";", $configExtensionsEnabled));
 

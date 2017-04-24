@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/../../SMStringUtilities.classes.php");
-
 /// <container name="gui/SMTreeMenu">
 /// 	Class represents a tree structure with selectable nodes.
 ///

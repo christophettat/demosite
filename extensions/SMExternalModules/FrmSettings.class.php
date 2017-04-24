@@ -72,7 +72,7 @@ class SMExternalModulesFrmSettings implements SMIExtensionForm
 		$this->lstHeightUnit = new SMOptionList("SMExternalModulesHeightUnit");
 		$this->lstHeightUnit->SetAttribute(SMOptionListAttribute::$Style, "width: 75x");
 		$this->lstHeightUnit->AddOption(new SMOptionListItem("SMExternalModulesHeightUnitPixels", $this->lang->GetTranslation("Pixels"), SMExternalModulesUnit::$Pixels));
-		$this->lstHeightUnit->AddOption(new SMOptionListItem("SMExternalModulesHeightUnitPercent", $this->lang->GetTranslation("Percent"), SMExternalModulesUnit::$Percent));
+		//$this->lstHeightUnit->AddOption(new SMOptionListItem("SMExternalModulesHeightUnitPercent", $this->lang->GetTranslation("Percent"), SMExternalModulesUnit::$Percent));
 
 		$this->lstScroll = new SMOptionList("SMExternalModulesScroll");
 		$this->lstScroll->AddOption(new SMOptionListItem("SMExternalModulesScrollNo", $this->lang->GetTranslation("ScrollNo"), SMExternalModulesScroll::$No));

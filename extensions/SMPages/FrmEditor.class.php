@@ -285,6 +285,13 @@ class SMPagesFrmEditor implements SMIExtensionForm
 			theme_advanced_buttons4 : \"insertlayer,moveforward,movebackward,absolute,|,styleprops,|,cite,abbr,acronym,del,ins,attribs,|,visualchars,nonbreaking,pagebreak\",
 			theme_advanced_toolbar_location : \"top\",
 			theme_advanced_toolbar_align : \"left\",
+			theme_advanced_statusbar_location : \"bottom\",
+
+			// Clear lists with CSS classes (must have a value to prevent TinyMCE from detecting available classes)
+			theme_advanced_styles : \" \",
+			table_styles : \"Data table=SMPagesDataTable;-----= ;Fluid Grid=SMPagesFluidGrid;Fluid Grid (stack below 900px)=SMPagesFluidGridStack900;Fluid Grid (stack below 700px)=SMPagesFluidGridStack700;Fluid Grid (stack below 500px)=SMPagesFluidGridStack500;-----= ;Fluid Grid Cards=SMPagesFluidGrid SMPagesGridCards;Fluid Grid Cards (stack below 900px)=SMPagesFluidGridStack900 SMPagesGridCards;Fluid Grid Cards (stack below 700px)=SMPagesFluidGridStack700 SMPagesGridCards;Fluid Grid Cards (stack below 500px)=SMPagesFluidGridStack500 SMPagesGridCards\",
+			table_cell_styles : \"Spacing=SMPagesTableCellSpacing\",
+			table_row_styles : \" \",
 
 			content_css : \"" . SMEnvironment::GetExternalUrl() . "/" . SMExtensionManager::GetExtensionPath("SMPages") . "/editor.css?ver=" . SMEnvironment::GetVersion() . (($basicCssFile !== null) ? "," . SMEnvironment::GetExternalUrl() . "/" . $basicCssFile : "") . (($overrideCssFile !== null) ? "," . SMEnvironment::GetExternalUrl() . "/" . $overrideCssFile : "") . "\",
 
@@ -301,7 +308,6 @@ class SMPagesFrmEditor implements SMIExtensionForm
 			],
 
 			language : \"" . $language . "\",
-			theme_advanced_statusbar_location : \"bottom\",
 			element_format : \"html\",
 			doctype : \"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01//EN' 'http://www.w3.org/TR/html4/strict.dtd'>\",
 			/*oninit : function() { tinyMCE.get(\"" . $this->txtContent->GetClientId() . "\").execCommand(\"mceFullScreen\"); },*/

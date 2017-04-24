@@ -2,14 +2,24 @@
 
 SMExtensionManager::Import("SMExtensionCommon", "SMExtensionCommon.class.php", true);
 require_once(dirname(__FILE__) . "/FrmConfig.class.php");
+require_once(dirname(__FILE__) . "/FrmSubsite.class.php");
 
 class SMConfig extends SMExtension
 {
 	private $lang = null;
 	private $smMenuExists = false;
 
+	public function GetExecutionModes()
+	{
+		return array(SMExecutionMode::$Shared, SMExecutionMode::$Dedicated);
+	}
+
 	public function Init()
 	{
+		// Dedicated execution mode used by subsite form
+		if ($this->context->GetExecutionMode() === SMExecutionMode::$Dedicated)
+			return;
+
 		$this->smMenuExists = SMExtensionManager::ExtensionEnabled("SMMenu"); // False if not installed or not enabled
 	}
 
@@ -20,8 +30,19 @@ class SMConfig extends SMExtension
 
 		$this->SetIsIntegrated(true);
 
-		$cfg = new SMConfigFrmConfig($this->context);
-		return $cfg->Render();
+		if (SMEnvironment::GetQueryValue("SMConfigSubsiteForm") !== null) // Runs in dedicated execution mode
+		{
+			// SUBSITES - BETA SECTION - START
+			// REQUIRES REVIEW/IMPROVEMENTS!
+			$cfg = new SMConfigFrmSubSite($this->context);
+			return $cfg->Render();
+			// SUBSITES - BETA SECTION - END
+		}
+		else // Runs in shared execution mode
+		{
+			$cfg = new SMConfigFrmConfig($this->context);
+			return $cfg->Render();
+		}
 	}
 
 	public function PreTemplateUpdate()

@@ -206,8 +206,9 @@ class SMPagesExtensionList
 	/// 	<param name="argument" type="string" default="String.Empty"> Optional argument passed to Content Page Extension </param>
 	/// 	<param name="pxWidth" type="integer" default="100"> Width of place holder (in pixels) shown within WYSIWYG editor </param>
 	/// 	<param name="pxHeight" type="integer" default="100"> Height of place holder (in pixels) shown within WYSIWYG editor </param>
+	/// 	<param name="useRelativeWidth" type="boolean" default="false"> Make width relative (percentage) </param>
 	/// </function>
-	public function AddExtension($category, $title, $extension, $file, $class, $argument = "", $pxWidth = 100, $pxHeight = 100)
+	public function AddExtension($category, $title, $extension, $file, $class, $argument = "", $pxWidth = 100, $pxHeight = 100, $useRelativeWidth = false)
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "category", $category, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "title", $title, SMTypeCheckType::$String);
@@ -217,6 +218,7 @@ class SMPagesExtensionList
 		SMTypeCheck::CheckObject(__METHOD__, "argument", $argument, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "pxWidth", $pxWidth, SMTypeCheckType::$Integer);
 		SMTypeCheck::CheckObject(__METHOD__, "pxHeight", $pxHeight, SMTypeCheckType::$Integer);
+		SMTypeCheck::CheckObject(__METHOD__, "useRelativeWidth", $useRelativeWidth, SMTypeCheckType::$Boolean);
 
 		SMExtensionManager::Import($extension, $file, true); // throws exception if extension file does not exist
 
@@ -244,7 +246,7 @@ class SMPagesExtensionList
 			"file"		=> $file,
 			"class"		=> $class,
 			"argument"	=> $argument,
-			"width"		=> $pxWidth . "px",
+			"width"		=> $pxWidth . (($useRelativeWidth === false) ? "px" : "%"),
 			"height"	=> $pxHeight . "px"
 		);
 	}
@@ -496,7 +498,11 @@ class SMPagesPage
 
 		if (self::$urlFormat === -1)
 		{
-			if (SMAttributes::GetAttribute("SMPagesSettingsUrlType") === null || SMAttributes::GetAttribute("SMPagesSettingsUrlType") === "UniqueId")
+			if (SMEnvironment::IsSubSite() === true && SMAttributes::GetAttribute("SMPagesSettingsUrlType") === null) // Subsites requires support for .htaccess, so SEO friendly URLs are already enabled - prefer Filename URLs
+			{
+				self::$urlFormat = 3;
+			}
+			else if (SMAttributes::GetAttribute("SMPagesSettingsUrlType") === null || SMAttributes::GetAttribute("SMPagesSettingsUrlType") === "UniqueId")
 			{
 				if (SMAttributes::GetAttribute("SMPagesSettingsSeoUrls") === null || SMAttributes::GetAttribute("SMPagesSettingsSeoUrls") === "false")
 					self::$urlFormat = 0;

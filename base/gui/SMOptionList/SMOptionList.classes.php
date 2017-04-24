@@ -1,10 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMRandom.class.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/../../SMStringUtilities.classes.php");
-
 /// <container name="gui/SMOptionListAttribute">
 /// 	Enum representing an attribute on an option list
 /// </container>

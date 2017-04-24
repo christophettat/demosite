@@ -1,7 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMLog.class.php");
 require_once(dirname(__FILE__) . "/phpmailer/PHPMailerAutoload.php");
 
 /// <container name="base/SMMailType">
@@ -31,7 +29,7 @@ class SMMailRecipientType
 /// <container name="base/SMMail">
 /// 	Class represents an e-mail which may be sent using the locale SMTP server if configured.
 ///
-/// 	$mail = new SMMail(SMMailType::$Html);
+/// 	$mail = new SMMail();
 /// 	$mail->AddRecipient(&quot;test@domain.com&quot;);
 /// 	$mail->SetSubject(&quot;My first e-mail&quot;);
 /// 	$mail->SetContent(&quot;&lt;b&gt;Hi Casper&lt;/b&gt;&lt;br&gt;Thank you for trying out Sitemagic CMS&quot;);
@@ -43,15 +41,16 @@ class SMMail
 	private $recipients;		// string[]
 	private $recipientsCc;		// string[]
 	private $recipientsBcc;		// string[]
+	private $attachments;		// string[]
 	private $subject;			// string
 	private $content;			// string
 	private $sender;			// string
 
 	/// <function container="base/SMMail" name="__construct" access="public">
 	/// 	<description> Create instance of SMMail </description>
-	/// 	<param name="mailType" type="SMMailType" default="SMMailType::$Text"> Type of e-mail (text or HTML) </param>
+	/// 	<param name="mailType" type="SMMailType" default="SMMailType::$Html"> Type of e-mail (Text or HTML) </param>
 	/// </function>
-	public function __construct($mailType = "Text")
+	public function __construct($mailType = "Html")
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "mailType", $mailType, SMTypeCheckType::$String);
 
@@ -62,6 +61,7 @@ class SMMail
 		$this->recipients = array();
 		$this->recipientsCc = array();
 		$this->recipientsBcc = array();
+		$this->attachments = array();
 		$this->subject = "";
 		$this->content = "";
 		$this->sender = "";
@@ -171,6 +171,29 @@ class SMMail
 		return $found;
 	}
 
+	/// <function container="base/SMMail" name="AddAttachment" access="public">
+	/// 	<description> Add reference to file to attach to e-mail </description>
+	/// 	<param name="fileName" type="string"> Filename (must be unique) as displayed in e-mail </param>
+	/// 	<param name="filePath" type="string"> Path to file attachment </param>
+	/// </function>
+	public function AddAttachment($fileName, $filePath)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "fileName", $fileName, SMTypeCheckType::$String);
+		SMTypeCheck::CheckObject(__METHOD__, "filePath", $filePath, SMTypeCheckType::$String);
+
+		$this->attachments[$fileName] = $filePath;
+	}
+
+	/// <function container="base/SMMail" name="RemoveAttachment" access="public">
+	/// 	<description> Remove file attachment previously added </description>
+	/// 	<param name="fileName" type="string"> Unique filename </param>
+	/// </function>
+	public function RemoveAttachment($fileName)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "fileName", $fileName, SMTypeCheckType::$String);
+		unset($this->attachments[$fileName]);
+	}
+
 	/// <function container="base/SMMail" name="SetSubject" access="public">
 	/// 	<description> Set e-mail subject </description>
 	/// 	<param name="value" type="string"> Subject </param>
@@ -232,7 +255,7 @@ class SMMail
 	{
 		// Read configuration
 
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$cfg = SMEnvironment::GetConfiguration();
 
 		$host	= $cfg->GetEntry("SMTPHost");
 		$port	= $cfg->GetEntry("SMTPPort");
@@ -246,13 +269,13 @@ class SMMail
 
 		// Send mail
 
-		if ($host === null || $host === "") // Use PHP standard mail if SMTP has not been configured
+		if (false) //if ($host === null || $host === "") // Use PHP standard mail if SMTP has not been configured (does not support file attachments!)
 		{
 			// Construct headers
 
 			$headers = "";
 
-			$headers .= (($headers !== "") ? "\r\n" : "") . "from: " . "cbolle@laposte.net";
+			$headers .= (($headers !== "") ? "\r\n" : "") . "from: " . $sender;
 			$headers .= (($headers !== "") ? "\r\n" : "") . "reply-to: " . $sender;
 
 			if ($this->type === SMMailType::$Html)
@@ -275,9 +298,9 @@ class SMMail
 
 			return mail(implode(",", $this->recipients), $this->subject, $this->content, $headers);
 		}
-		else // Send mail through SMTP using PHPMailer
+		else // Send mail through using PHPMailer
 		{
-			$mail = new PHPMailer();
+			$mail = new PHPMailer(); // Debugging: Add True argument to have PHPMailer throw exceptions on errors
 
 			// Enable debugging
 
@@ -289,28 +312,28 @@ class SMMail
 
 			// Configure SMTP
 
-			$mail->isSMTP();
-			$mail->Host = $host;
+			if ($host !== null && $host !== "")
+			{
+				$mail->isSMTP();
+				$mail->Host = $host;
 
-			if ($usr !== null && $usr !== "")
-				$mail->SMTPAuth = true;
-			if ($atyp !== null)
-				$mail->AuthType = strtoupper($atyp);	// LOGIN (default when string is empty), PLAIN, NTLM, CRAM-MD5
-			if ($enc !== null)
-				$mail->SMTPSecure = strtolower($enc);	// empty string, tls, or ssl
-			if ($port !== null && SMStringUtilities::Validate($port, SMValueRestriction::$Numeric) === true)
-				$mail->Port = (int)$port;
-			if ($usr !== null)
-				$mail->Username = $usr;
-			if ($psw !== null)
-				$mail->Password = $psw;
+				if ($usr !== null && $usr !== "")
+					$mail->SMTPAuth = true;
+				if ($atyp !== null)
+					$mail->AuthType = strtoupper($atyp);	// LOGIN (default when string is empty), PLAIN, NTLM, CRAM-MD5
+				if ($enc !== null)
+					$mail->SMTPSecure = strtolower($enc);	// empty string, tls, or ssl
+				if ($port !== null && SMStringUtilities::Validate($port, SMValueRestriction::$Numeric) === true)
+					$mail->Port = (int)$port;
+				if ($usr !== null)
+					$mail->Username = $usr;
+				if ($psw !== null)
+					$mail->Password = $psw;
+			}
 
-			$mail->Sender = "gitevigan@gmail.com";
-			$mail->From = "gitevigan@gmail.com";
-			$mail->FromName = "gitevigan@gmail.com";
-			
-			$mail->addReplyTo($sender);
-			
+			$mail->Sender = $sender;
+			$mail->From = $sender;
+			$mail->FromName = $sender;
 
 			// Add recipients
 
@@ -321,10 +344,21 @@ class SMMail
 			foreach ($this->recipientsBcc as $r)
 				$mail->addBCC($r);
 
+			// Add attachments
+
+			foreach ($this->attachments as $fileName => $filePath)
+			{
+				if ($mail->AddAttachment($filePath, $fileName) === false) // Returns False on error - e.g. if file does not exist
+					throw new Exception("Unable to attach file '" . $filePath . "'");
+			}
+
 			// Set content format
 
 			$mail->isHTML($this->type === SMMailType::$Html);
 			$mail->CharSet = "ISO-8859-1";
+
+			if ($this->type === SMMailType::$Html)
+				$mail->Encoding = "base64"; // Encode e-mail as Base64 to prevent large HTML strings from being broken up, causing corrupted output
 
 			// Set content
 
@@ -342,7 +376,8 @@ class SMMail
 				$log = ob_get_contents();
 				ob_end_clean();
 
-				SMLog::Log(__FILE__, __LINE__, $log);
+				if ($log !== "")
+					SMLog::Log(__FILE__, __LINE__, $log);
 			}
 
 			// Done

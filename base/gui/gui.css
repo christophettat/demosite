@@ -26,44 +26,27 @@ div.SMFormMaxLengthWarning
 
 
 /* SMIntegrated mode */
-/* NOTICE: Using :not to prevent certain styles on IE7 and IE8 (poor and buggy browsers) */
 
-div.SMIntegrated:not(#IE7IE8) fieldset.SMFieldset
+div.SMIntegrated fieldset.SMFieldset
 {
-	/* Remove borders on fieldset (except top border) and move down a bit to
-	   create spacing for legend which is positioned above border.  */
 	border-style: none;
-	border-top-style: solid;
-
-	position: relative;
-	top: 1.30em;
 }
-div.SMIntegrated:not(#IE7IE8) fieldset.SMFieldset:after
+div.SMIntegrated fieldset.SMFieldset > legend
 {
-	/* Moving fieldset down causes missing spacing below - compensate */
-	content: "";
-	display: block;
-	height: 1.30em;
-}
-div.SMIntegrated:not(#IE7IE8) fieldset.SMFieldset > legend
-{
-	/* Style legend - position above top border.
-	   This leaves a hole in the border on IE7/8 - hence using :not */
-	position: absolute;
-	top: -1.35em;
-	left: -10px;
 	text-transform: uppercase;
+	padding-bottom: 0.1em;
+	padding-left: 0px !important;
+	margin-left: 0px !important;
 }
-div.SMIntegrated:not(#IE7IE8) fieldset.SMFieldsetExpanded > div
+div.SMIntegrated fieldset.SMFieldset > div
 {
-	/* Remove padding within fieldset but increase padding from top */
+	border-top: 1px solid #9F9F9F;
+	border-top: 1px solid rgba(0, 0, 0, 0.3);
 	padding: 0px !important;
-	padding-top: 15px !important;
 }
-div.SMIntegrated:not(#IE7IE8) fieldset.SMFieldsetCollapsed > div
+div.SMIntegrated fieldset.SMFieldsetExpanded > div
 {
-	/* Remove padding within fieldset when collapsed */
-	padding: 0px !important;
+	padding-top: 1em !important;
 }
 
 div.SMIntegrated table

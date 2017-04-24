@@ -1,13 +1,10 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-
 class SMLicenseHandler
 {
 	public static function GetLicenseKey()
 	{
-		$cfg = new SMConfiguration("config.xml.php");
+		$cfg = SMEnvironment::GetConfiguration();
 		return $cfg->GetEntry("LicenseKey");
 	}
 

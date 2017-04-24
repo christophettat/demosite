@@ -1,7 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMContext.class.php");
-
 /// <container name="base/SMExtension">
 /// 	Base class for all extensions running within the application. Extensions must inherit from
 /// 	SMExtension in order to work.

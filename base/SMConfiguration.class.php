@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTextFile.classes.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-
 /// <container name="base/SMConfiguration">
 /// 	Configuration manager used to read and update configuration files
 /// 	such as config.xml.php. Use file extension ".xml.php" to prevent

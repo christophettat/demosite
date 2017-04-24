@@ -12,7 +12,7 @@ html.SMPagesEditor.SMPagesSystemPage.SMPagesFilenameFooter
 	background-image: url("../../files/images/backgrounds/Sunrise.jpg");
 }
 
-body, td, legend, input, textarea, select
+html, body, td, legend, input, textarea, select
 {
 	font-size: 14px;
 }

@@ -1,12 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMTextFile.classes.php");
-require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-require_once(dirname(__FILE__) . "/SMSqlCommon.classes.php");
-
 // XML based DataSource is case sensitive on DataSource names, not attributes.
 // It can't handle special characters such as the Euro sign.
 // It is dynamic - new columns/fields can be added on the fly for individual entries.
@@ -109,12 +102,12 @@ class SMDataSource implements SMIDataSource
 			{
 				if ($select === "" || $select === "*")
 				{
-					$dataCollection[$key] = $this->decode($value->nodeValue); // $nodeValue = string
+					$dataCollection[strtolower($key)] = $this->decode($value->nodeValue); // $nodeValue = string
 				}
 				else
 				{
 					if ($this->getElementFromStringArrayCaseInsensitive($key, $selects) !== null)
-						$dataCollection[$key] = $this->decode($value->nodeValue); // $nodeValue = string
+						$dataCollection[strtolower($key)] = $this->decode($value->nodeValue); // $nodeValue = string
 				}
 			}
 
@@ -191,7 +184,7 @@ class SMDataSource implements SMIDataSource
 			foreach ($data as $key => $value)
 			{
 				SMSqlParser::ValidateFieldName($key);
-				$entry->setAttribute($key, $this->encode($value));
+				$entry->setAttribute($this->getCaseSensitiveAttribute($entry, $key), $this->encode($value)); // use getCaseSensitiveAttribute(..) to make sure multiple attributes with the same name but different casing cannot be added (e.g. price, Price, PRicE, etc)
 			}
 		}
 
@@ -289,7 +282,7 @@ class SMDataSource implements SMIDataSource
 		// without exceptions. An extension might call Commit on
 		// it's own, so we have to verify data here as well.
 		if ($this->Verify() === false)
-			throw new Exception("Unable to write data to resource '" . $this->ds->GetName() . "' - data corrupted, possibly due to use of invalid character set");
+			throw new Exception("Unable to write data to resource '" . $this->ds->GetName() . "' - possible causes: write protection or data corruption (possibly due to use of invalid character set)");
 
 		$xml = $this->ds->GetInternalDataSource()->saveXML();
 		$xml = "<?php exit(); ?>" . $xml;
@@ -418,7 +411,7 @@ class SMDataSource implements SMIDataSource
 
 	public static function GetDataSourceVersion()
 	{
-		return "20121020"; // Sitemagic CMS version is suitable for the XML based data source
+		return "20150926";
 	}
 
 	private function getEntries($whereStr)
@@ -443,11 +436,8 @@ class SMDataSource implements SMIDataSource
 
 		// Extract entries matching WHERE statements
 
-		// Each of these expressions must be matched in order to include a given entry.
-		// KNOWN BUG (SQL and XML DS may produce very different results!)
-		//   MySQL intepretation: (gender = 'Male' AND age < 30) OR (age >= 35)
-		//   SMCMS intepretation: (gender = 'Male') AND (age < 30 OR age >= 35)
-		$whereAnds = SMSqlParser::SplitSql($whereStr, " AND ");
+		// One of these expressions must be matched in order to include a given entry
+		$whereOrs = SMSqlParser::SplitSql($whereStr, " OR ");
 		$wheres = null;
 
 		// Variables used in loops below
@@ -457,27 +447,24 @@ class SMDataSource implements SMIDataSource
 		$whereOpr = "";
 		$whereExpr = "";
 
-		$whereExprSearches = null;
-		$whereExprOffset = 0;
-
-		$include = true;
+		$include = false;
 		$dbValue = "";
 
 		foreach ($entries as $entry) // $entry = DOMElement (extending DOMNode)
 		{
-			$include = true;
+			$include = false;
 
-			foreach ($whereAnds as $whereAnd)
+			foreach ($whereOrs as $whereOr) // OR
 			{
-				if ($include === false)
+				if ($include === true)
 					break;
 
-				// One of these expressions must be matched in order to include a given entry.
-				$wheres = SMSqlParser::SplitSql($whereAnd, " OR ");
+				// All of these expressions must be matched in order to include a given entry
+				$wheres = SMSqlParser::SplitSql($whereOr, " AND ");
 
-				$include = false;
+				$include = true;
 
-				foreach ($wheres as $where)
+				foreach ($wheres as $where) // AND
 				{
 					$tmpStrArr = SMSqlParser::SplitSql($where, " ");
 
@@ -522,198 +509,107 @@ class SMDataSource implements SMIDataSource
 					if ($whereOpr === "=")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($dbValue === $whereExpr)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
+
+						if ($dbValue === $whereExpr)
+							continue;
 					}
 					else if ($whereOpr === "!=")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($dbValue !== $whereExpr)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
+
+						if ($dbValue !== $whereExpr)
+							continue;
 					}
 					else if ($whereOpr === ">")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($dbValue > $whereExpr)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
+
+						if ($dbValue > $whereExpr)
+							continue;
 					}
 					else if ($whereOpr === ">=")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($dbValue >= $whereExpr)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
+
+						if ($dbValue >= $whereExpr)
+							continue;
 					}
 					else if ($whereOpr === "<")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($dbValue < $whereExpr)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
+
+						if ($dbValue < $whereExpr)
+							continue;
 					}
 					else if ($whereOpr === "<=")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($dbValue <= $whereExpr)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
+
+						if ($dbValue <= $whereExpr)
+							continue;
 					}
 					else if ($whereOpr === "NOT LIKE")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($whereExpr !== "" && str_replace("%", "", $whereExpr) === "") // example: name NOT LIKE '%%%' (skips all rows in MySQL even though one might think it's identical to   name NOT LIKE ''   which includes only records with name attribute set (not empty))
-							break;
-
-						if ($whereExpr === "" && $dbValue === "") // Skip if e.g.   name NOT LIKE ''   and value is empty (don't want empty values)
-							break;
-
-						if ($whereExpr === "" && $dbValue !== "") // Include if e.g.   name NOT LIKE ''   and value is set
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
 
-						$whereExprSearches = array();
-						$whereExprOffset = 0;
-						$whereExprSearches = SMSqlParser::SplitSql($whereExpr, "%");
-
-						for ($i = 0 ; $i < count($whereExprSearches) ; $i++)
-						{
-							if ($whereExprSearches[$i] === "")
-								continue;
-
-							if ($i === 0 && SMStringUtilities::StartsWith($dbValue, $whereExprSearches[$i]) === false)
-							{
-								$include = true;
-								break;
-							}
-							else if ($i === count($whereExprSearches) - 1 && SMStringUtilities::EndsWith($dbValue, $whereExprSearches[$i]) === false)
-							{
-								$include = true;
-								break;
-							}
-							else
-							{
-								$whereExprOffset = strpos($dbValue, $whereExprSearches[$i], $whereExprOffset);
-
-								if ($whereExprOffset === false)
-								{
-									$include = true;
-									break;
-								}
-
-								$whereExprOffset = $whereExprOffset + strlen($whereExprSearches[$i]);
-							}
-						}
-
-						break;
+						if (self::likeMatched($whereExpr, $dbValue) === false)
+							continue;
 					}
 					else if ($whereOpr === "LIKE")
 					{
 						if ($dbValue === null)
-							break;
-
-						if ($whereExpr !== "" && str_replace("%", "", $whereExpr) === "") // example:   name LIKE '%%%'   (includes all rows in MySQL even though one might think it's identical to   name LIKE ''   which includes only records with name attribute empty)
 						{
-							$include = true;
+							$include = false;
 							break;
 						}
 
-						if ($whereExpr === "" && $dbValue !== "") // Skip if e.g.   name LIKE ''   and value is set
-							break;
-
-						if ($whereExpr === "" && $dbValue === "") // Include if e.g.   name LIKE ''   and value is empty
-						{
-							$include = true;
-							break;
-						}
-
-						$include = true;
-
-						$whereExprSearches = array();
-						$whereExprOffset = 0;
-						$whereExprSearches = SMSqlParser::SplitSql($whereExpr, "%");
-
-						for ($i = 0 ; $i < count($whereExprSearches) ; $i++)
-						{
-							if ($whereExprSearches[$i] === "")
-								continue;
-
-							if ($i === 0 && SMStringUtilities::StartsWith($dbValue, $whereExprSearches[$i]) === false)
-							{
-								$include = false;
-								break;
-							}
-							else if ($i === count($whereExprSearches) - 1 && SMStringUtilities::EndsWith($dbValue, $whereExprSearches[$i]) === false)
-							{
-								$include = false;
-								break;
-							}
-							else
-							{
-								$whereExprOffset = strpos($dbValue, $whereExprSearches[$i], $whereExprOffset);
-
-								if ($whereExprOffset === false)
-								{
-									$include = false;
-									break;
-								}
-
-								$whereExprOffset = $whereExprOffset + strlen($whereExprSearches[$i]);
-							}
-						}
-
-						break;
+						if (self::likeMatched($whereExpr, $dbValue) === true)
+							continue;
 					}
 					else if ($whereOpr === "IS NULL")
 					{
 						if ($dbValue === null)
-						{
-							$include = true;
-							break;
-						}
+							continue;
 					}
 					else if ($whereOpr === "IS NOT NULL")
 					{
 						if ($dbValue !== null)
-						{
-							$include = true;
-							break;
-						}
+							continue;
 					}
 					else
 					{
 						throw new Exception("Unsupported operator '" . $whereOpr . "'");
 					}
+
+					$include = false;
 				}
 			}
 
@@ -722,6 +618,47 @@ class SMDataSource implements SMIDataSource
 		}
 
 		return $entriesMatching;
+	}
+
+	private function likeMatched($whereExpr, $dbValue)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "whereExpr", $whereExpr, SMTypeCheckType::$String);
+		SMTypeCheck::CheckObject(__METHOD__, "dbValue", $dbValue, SMTypeCheckType::$String);
+
+		if ($whereExpr !== "" && str_replace("%", "", $whereExpr) === "") // example:   name LIKE '%'   or   name LIKE '%%%'   (includes all records in MySQL, even though one would expect only records with an empty name to be included)
+			return true;
+
+		if ($whereExpr === "")
+			return ($dbValue === "");
+
+		$whereExprSearches = SMSqlParser::SplitSql($whereExpr, "%");
+		$whereExprOffset = 0;
+
+		for ($i = 0 ; $i < count($whereExprSearches) ; $i++)
+		{
+			if ($whereExprSearches[$i] === "")
+				continue;
+
+			if ($i === 0 && SMStringUtilities::StartsWith($dbValue, $whereExprSearches[$i]) === false)
+			{
+				return false;
+			}
+			else if ($i === count($whereExprSearches) - 1 && SMStringUtilities::EndsWith($dbValue, $whereExprSearches[$i]) === false)
+			{
+				return false;
+			}
+			else
+			{
+				$whereExprOffset = strpos($dbValue, $whereExprSearches[$i], $whereExprOffset);
+
+				if ($whereExprOffset === false)
+					return false;
+
+				$whereExprOffset = $whereExprOffset + strlen($whereExprSearches[$i]);
+			}
+		}
+
+		return true;
 	}
 
 	private function orderBy($entries, $orderStr)
@@ -874,7 +811,7 @@ class SMDataSource implements SMIDataSource
 		// Using HtmlEntityEncode results in more data and larger XML files.
 
 		SMTypeCheck::CheckObject(__METHOD__, "str", $str, SMTypeCheckType::$String);
-		return SMStringUtilities::HtmlEntityEncode($str);
+		return SMStringUtilities::HtmlEntityEncode($str, true); // True = double encode to preserve encoded HTML (e.g. <p>&lt;i&gt;Hello&lt;/i&gt;</p>)
 	}
 
 	private function decode($str)
@@ -966,7 +903,7 @@ class SMDataSource implements SMIDataSource
 
 	private function getSourcePath()
 	{
-		return dirname(__FILE__) . "/../data/" . $this->ds->GetName() . ".xml.php";
+		return dirname(__FILE__) . "/../" . SMEnvironment::GetDataDirectory() . "/" . $this->ds->GetName() . ".xml.php";
 	}
 }
 

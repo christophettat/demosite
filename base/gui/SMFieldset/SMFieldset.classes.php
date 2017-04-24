@@ -1,7 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-
 /// <container name="gui/SMFieldsetAttribute">
 /// 	Enum representing an attribute in field set
 /// </container>

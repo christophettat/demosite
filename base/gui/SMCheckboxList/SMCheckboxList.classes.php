@@ -1,8 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-
 /// <container name="gui/SMCheckboxListItem">
 /// 	Class represents an item within a check box list.
 ///

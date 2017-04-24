@@ -16,6 +16,19 @@ div.TPLMenuMobile
 /*@media (max-width: 768px)*/
 @media (max-width: 900px)
 {
+	/* Make background image scale properly on mobile devices with Android/iOS */
+	html.Normal
+	{
+		height: 100%;
+		overflow: hidden;
+	}
+	html.Normal body
+	{
+		height:100%;
+		overflow: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
 	div.TPLTop,
 	div.TPLMiddle,
 	div.TPLBottom
@@ -32,15 +45,21 @@ div.TPLMenuMobile
 
 	div.TPLPage,
 	div.TPLHeader,
-	div.TPLContent, div.SMExtension,
+	div.TPLContent, html.Normal div.SMExtension,
 	div.TPLFooter
 	{
 		margin: 0px 0px 0px 0px !important;
 		padding: 0px 0px 0px 0px !important;
+
+		/* Make contained elements with top/bottom margins expand the content area rather than
+	       causing spacing above and below it. Example: http://jsfiddle.net/o1vkar7c/2/ */
+		padding-top: 0.1px !important;
+		padding-bottom: 0.1px !important;
 	}
 	div.TPLHeader
 	{
 		margin-top: 20px !important;
+		float: none !important;
 	}
 	div.TPLContent
 	{
@@ -50,6 +69,7 @@ div.TPLMenuMobile
 	div.TPLFooter
 	{
 		margin-bottom: 20px !important;
+		padding: 0em 1.5em 0em 1.5em !important;
 	}
 	div.TPLHeader,
 	div.TPLContent,
@@ -58,7 +78,7 @@ div.TPLMenuMobile
 		margin-left: 10px !important;
 		margin-right: 10px !important;
 	}
-	div.SMExtension
+	html.Normal div.SMExtension /* Indenting content in div.TPLContent */
 	{
 		margin: 1.5em 1.5em 1.5em 1.5em !important;
 	}
@@ -103,6 +123,7 @@ div.TPLMenuMobile
 		position: fixed;
 		top: 5px;
 		right: 5px;
+		z-index: 999;
 
 		display: block;
 		width: 50px;
@@ -158,25 +179,9 @@ div.TPLMenuMobile
 		display: none;
 	}
 
-	/* Contact form */
-
-	fieldset[id^="SMFieldsetSMContact"] table
-	{
-		width: 100%;
-	}
-	fieldset[id^="SMFieldsetSMContact"] td
-	{
-		display: block;
-	}
-	fieldset[id^="SMFieldsetSMContact"] tr:nth-last-child(2)
-	{
-		display: none;
-	}
-
 	/* Content */
 
-	html.SMPagesViewer.SMPagesClassicLayout div.TPLContent img[width][height][src^="files/images/"],
-	html.SMPagesViewer.SMPagesClassicLayout div.TPLContent img[width][height][data-mce-src^="files/images/"]
+	html.SMPagesViewer.SMPagesClassicLayout div.TPLContent img[width][height][src^="files/images/"]
 	{
 		/* Optimize images in ordinary content pages (Classic Layout)
 		   so they shrink properly on small screens. */
@@ -185,7 +190,10 @@ div.TPLMenuMobile
 		height: auto !important;
 		float: none !important;
 		display: block !important;
-		margin: 30px auto 30px auto !important;
+	}
+	html.SMPagesViewer.SMPagesClassicLayout div.TPLContent img[width][height][src^="files/images/"][style*="margin"]
+	{
+		margin: 1em auto 1em auto !important;
 	}
 
 	div.SMPagesCard img[width][height][src^="files/images/"]:first-child,
@@ -255,13 +263,14 @@ div.TPLMenuMobile
 		border-radius: 0px !important;
 	}
 
-	/* Iframes / external modules - stretch to full width */
+	/* Page Extensions - Iframes / external modules - stretch to full width */
 
 	div.TPLContent div.SMPagesExtension
 	{
 		display: block !important;
 	}
-	div.TPLContent div.SMPagesExtension iframe
+	div.TPLContent div.SMExternalModulesContentPageExtension,
+	div.TPLContent div.SMExternalModulesContentPageExtension iframe
 	{
 		width: 100% !important;
 	}

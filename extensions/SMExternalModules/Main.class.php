@@ -26,7 +26,7 @@ class SMExternalModules extends SMExtension
 				$modules = SMExternalModulesLoader::GetModules();
 
 				foreach ($modules as $module)
-					$extList->AddExtension($this->getTranslation("Title"), $module->GetName(), "SMExternalModules", "ContentPageExtension.class.php", "SMExternalModulesContentPageExtension", $module->GetGuid(), (($module->GetWidthUnit() === SMExternalModulesUnit::$Pixels) ? $module->GetWidth() : "100"), (($module->GetHeightUnit() === SMExternalModulesUnit::$Pixels) ? $module->GetHeight() : "50"));
+					$extList->AddExtension($this->getTranslation("Title"), $module->GetName(), "SMExternalModules", "ContentPageExtension.class.php", "SMExternalModulesContentPageExtension", $module->GetGuid(), $module->GetWidth(), (($module->GetHeightUnit() === SMExternalModulesUnit::$Pixels) ? $module->GetHeight() : "50"), ($module->GetWidthUnit() === SMExternalModulesUnit::$Percent));
 			}
 		}
 	}

@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/../../SMTemplate.classes.php");
-
 /// <container name="gui/SMNotify">
 /// 	SMNotify is a helper class useful for creating notifications
 /// 	with a common look and feel. Notice that this class should

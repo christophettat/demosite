@@ -31,30 +31,30 @@
 /// 	It has become a small JavaScript library with common browser functionality.
 /// </container>
 
-session_start();
 
-// Used by controller
-require_once(dirname(__FILE__) . "/SMTemplate.classes.php");
+require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
+require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
+require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
+require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
+require_once(dirname(__FILE__) . "/SMLog.class.php");
+require_once(dirname(__FILE__) . "/SMAttributes.class.php");
 require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
 require_once(dirname(__FILE__) . "/SMAuthentication.class.php");
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
+require_once(dirname(__FILE__) . "/SMTemplate.classes.php");
 require_once(dirname(__FILE__) . "/SMForm.classes.php");
-require_once(dirname(__FILE__) . "/SMExtensionManager.class.php");
-require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
-require_once(dirname(__FILE__) . "/SMExtension.class.php");
-require_once(dirname(__FILE__) . "/SMDataSource.classes.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMAttributes.class.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/SMLicenseHandler.class.php");
-require_once(dirname(__FILE__) . "/SMContext.class.php");
 require_once(dirname(__FILE__) . "/SMSqlCommon.classes.php");
-
-// Required in order to make classes available to extensions
+require_once(dirname(__FILE__) . "/SMDataSource.classes.php");
 require_once(dirname(__FILE__) . "/SMImageProvider.classes.php");
 require_once(dirname(__FILE__) . "/SMLanguageHandler.class.php");
 require_once(dirname(__FILE__) . "/SMRandom.class.php");
 require_once(dirname(__FILE__) . "/SMTextFile.classes.php");
+require_once(dirname(__FILE__) . "/SMRequest.classes.php");
+require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
+require_once(dirname(__FILE__) . "/SMUtilities.classes.php");
+require_once(dirname(__FILE__) . "/SMMail.classes.php");
+require_once(dirname(__FILE__) . "/SMExtensionManager.class.php");
+require_once(dirname(__FILE__) . "/SMExtension.class.php");
+require_once(dirname(__FILE__) . "/SMContext.class.php");
 require_once(dirname(__FILE__) . "/gui/SMTreeMenu/SMTreeMenu.classes.php");
 require_once(dirname(__FILE__) . "/gui/SMInput/SMInput.classes.php");
 require_once(dirname(__FILE__) . "/gui/SMLinkButton/SMLinkButton.class.php");
@@ -63,11 +63,7 @@ require_once(dirname(__FILE__) . "/gui/SMGrid/SMGrid.class.php");
 require_once(dirname(__FILE__) . "/gui/SMFieldset/SMFieldset.classes.php");
 require_once(dirname(__FILE__) . "/gui/SMCheckboxList/SMCheckboxList.classes.php");
 require_once(dirname(__FILE__) . "/gui/SMNotify/SMNotify.class.php");
-require_once(dirname(__FILE__) . "/SMLog.class.php");
-require_once(dirname(__FILE__) . "/SMRequest.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-require_once(dirname(__FILE__) . "/SMUtilities.classes.php");
-require_once(dirname(__FILE__) . "/SMMail.classes.php");
+
 
 class SMController
 {
@@ -82,7 +78,7 @@ class SMController
 		set_exception_handler("SMExceptionHandler");
 		$this->disableMagicQuotes();
 
-		$this->config = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$this->config = SMEnvironment::GetConfiguration();
 
 		$debug = $this->config->GetEntry("Debug");
 		SMTypeCheck::SetEnabled(($debug !== null && strtolower($debug) === "true"));
@@ -96,6 +92,8 @@ class SMController
 
 	private function initialization()
 	{
+		SMEnvironment::Initialize(); // Initializes cookies and sessions (calls session_name(..) and session_start())
+
 		$timezone = $this->config->GetEntry("DefaultTimeZoneOverride");
 		if ($timezone !== null && $timezone !== "")
 			date_default_timezone_set($timezone);
@@ -138,7 +136,6 @@ class SMController
 		$head = "";
 		$head .= "\n\t<meta name=\"generator\" content=\"Sitemagic CMS\">";
 		$head .= "\n\t<meta http-equiv=\"content-type\" content=\"text/html;charset=" . $charSet . "\">";
-		$head .= "\n\t<meta name=\"google-site-verification\" content=\"hMkYFjDT-rtpreEVPyE6FZqg6OVjMQecwJzQlvngsXE\" />";
 		$head .= "\n\t<link rel=\"shortcut icon\" type=\"images/x-icon\" href=\"favicon.ico\">";
 		$head .= "\n\t<link rel=\"stylesheet\" type=\"text/css\" href=\"base/gui/gui.css?ver=" . SMEnvironment::GetVersion() . "\">";
 		if ($basicCss !== null)
@@ -154,6 +151,7 @@ class SMController
 		$scripts = "";
 		$scripts .= "\n\t<script type=\"text/javascript\" src=\"base/gui/json2.js?ver=" . SMEnvironment::GetVersion() . "\"></script>"; // JSON.parse(..) and JSON.stringify(..) for IE7
 		$scripts .= "\n\t<script type=\"text/javascript\">" . $this->getClientLanguage() . "</script>";
+		$scripts .= "\n\t<script type=\"text/javascript\">" . $this->getClientEnvironment() . "</script>";
 		$scripts .= "\n\t<script type=\"text/javascript\" src=\"base/gui/SMClient.js?ver=" . SMEnvironment::GetVersion() . "\"></script>";
 		if ($this->config->GetEntry("SMWindowLegacyMode") !== null && strtolower($this->config->GetEntry("SMWindowLegacyMode")) === "true")
 			$scripts .= "\n\t<script type=\"text/javascript\">SMWindow.LegacyMode = true;</script>";
@@ -245,7 +243,46 @@ class SMController
 			if (SMStringUtilities::StartsWith($entry, "SMClient") === true)
 				$json .= (($json !== "") ? ", " : "") . substr($entry, strlen("SMClient")) . " : \"" . $lang->GetTranslation($entry) . "\"";
 
-		return "var SMClientLanguageStrings = {" . $json . "};";
+		return "SMClientLanguageStrings = {" . $json . "};";
+	}
+
+	private function getClientEnvironment()
+	{
+		// From a client side perspective, all system folders are hosted under a subsite. Therefore sites/xyz is removed from all the folder paths.
+		// For a subsite, the folders extensions, images, and base are actually found under the main site, but the root .htaccess file makes sure
+		// to redirect any requests to these. Example: sites/demo/extensions/SMPages/editor.css => extensions/SMPages/editor.css
+		// The templates folder and files folder may be either shared with the main site, or separated from the main site.
+		// If the first is the case, a .htaccess file within these folders will make sure to perform relevant redirection.
+		// Example: sites/templates/Sunrise/styles.css => templates/Sunrise/styles.css.
+		// If the templates folder or files folder is separated from the main site, obviously the .htaccess is left out, causing
+		// any contained files to be used when referenced. Example: sites/demo/templates/Sunrise/styles.css.
+		// In the case where server side code uses SMEnvironment::Get***Directory() to obtain the path to any given folder hosted
+		// under a subsite - e.g. SMEnvironment::GetTemplatesDirectory() - and this particular folder has been configured to act
+		// as a folder separate from the main site, the path returned would be something like: sites/demo/templates.
+		// However, if this path is used client side on a subsite, it would produce a request to sites/demo/templates from the
+		// location sites/demo, meaning the browser would request the file like so: sites/demo/sites/demo/templates.
+		// To simplify development, the root .htaccess file handles this by redirecting any request to e.g. sites/demo/sites/demo/templates
+		// to sites/demo/templates, making it completely transparent to the developer, allowing for paths returned from any
+		// SMEnvironment::Get***Directory() function to be used both server side and client side.
+
+		$requestPath = $this->stripSubsite(SMEnvironment::GetRequestPath());
+		$extensionsDir = $this->stripSubsite(SMEnvironment::GetExtensionsDirectory());
+		$filesDir = $this->stripSubsite(SMEnvironment::GetFilesDirectory());
+		$templatesDir = $this->stripSubsite(SMEnvironment::GetTemplatesDirectory());
+		$dataDir = $this->stripSubsite(SMEnvironment::GetDataDirectory());
+		$imagesDir = $this->stripSubsite(SMEnvironment::GetImagesDirectory());
+
+		return "SMClientEnvironmentInfo = { IsSubSite: " . ((SMEnvironment::IsSubSite() === true) ? "true" : "false") . ", Dirs: { RequestPath: '" . $requestPath . "', Files: '" . $filesDir . "', Data: '" . $dataDir . "', Images: '" . $imagesDir . "', Templates: '" . $templatesDir . "', Extensions: '" . $extensionsDir . "' } };";
+	}
+
+	private function stripSubsite($path)
+	{
+		$subsite = SMEnvironment::GetSubsiteDirectory();
+
+		if ($subsite !== null && strpos($path, $subsite) === 0)
+			return substr($path, strlen($subsite) + 1);
+		return $path;
+
 	}
 
 	private function loadTemplate()
@@ -275,7 +312,7 @@ class SMController
 			if (SMExtensionManager::ExtensionEnabled($extension) === false)
 				throw new Exception("Extension '" . $extension . "' is not accessible (not found or enabled) - unable to invoke callback");
 
-			$callback = "extensions/" . $extension . "/" . $cb . ".callback.php";
+			$callback = SMEnvironment::GetExtensionsDirectory() . "/" . $extension . "/" . $cb . ".callback.php";
 
 			if (SMFileSystem::FileExists($callback) === false)
 				throw new Exception("Callback '" . $cb . "' not found");

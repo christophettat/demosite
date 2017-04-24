@@ -38,6 +38,11 @@ class SMConfigFrmConfig implements SMIExtensionForm
 
 	private $chkLstExtensions;
 
+	// SUBSITES - BETA SECTION - START
+	private $arrSubSites;
+	private $cmdNewSubSite;
+	// SUBSITES - BETA SECTION - END
+
 	private $cmdSave;
 	private $cmdCancel;
 
@@ -160,7 +165,7 @@ class SMConfigFrmConfig implements SMIExtensionForm
 		$this->lstSmtpEncryption->SetAttribute(SMOptionListAttribute::$Style, "width: 150px");
 		$this->lstSmtpEncryption->AddOption(new SMOptionListItem("SMConfigSmtpEncryptionEmpty", "", ""));
 		$this->lstSmtpEncryption->AddOption(new SMOptionListItem("SMConfigSmtpEncryptionTls", "TLS", "TLS"));
-		$this->lstSmtpEncryption->AddOption(new SMOptionListItem("SMConfigSmtpEncryptionSsl", "SSl", "SSL"));
+		$this->lstSmtpEncryption->AddOption(new SMOptionListItem("SMConfigSmtpEncryptionSsl", "SSL", "SSL"));
 
 		$this->chkLstExtensions = new SMCheckboxList("SMConfigExtensions");
 		$this->chkLstExtensions->SetLabelStyle("font-weight: bold");
@@ -175,6 +180,20 @@ class SMConfigFrmConfig implements SMIExtensionForm
 				$this->chkLstExtensions->AddItem(new SMCheckboxListItem("SMConfig" . $extension, $extension, $md["Title"], $md["Description"]));
 			}
 		}
+
+
+		// SUBSITES - BETA SECTION - START
+		// REQUIRES REVIEW/IMPROVEMENTS!
+
+		$this->populateSubSites();
+
+		$this->cmdNewSubSite = new SMLinkButton("SMConfigSave");
+		$this->cmdNewSubSite->SetTitle("New subsite");
+		$this->cmdNewSubSite->SetIcon(SMImageProvider::GetImage(SMImageType::$Create));
+		$this->cmdNewSubSite->SetOnClick("var w = new SMWindow(); w.SetUrl('" . SMExtensionManager::GetExtensionUrl($this->context->GetExtensionName(), SMTemplateType::$Basic, SMExecutionMode::$Dedicated) . "&SMConfigSubsiteForm'); w.SetSize(500, 500); w.Show(); return;");
+
+		// SUBSITES - BETA SECTION - END
+
 
 		$this->cmdSave = new SMLinkButton("SMConfigSave");
 		$this->cmdSave->SetTitle($this->lang->GetTranslation("Save"));
@@ -200,10 +219,38 @@ class SMConfigFrmConfig implements SMIExtensionForm
 
 		if ($restoreSelectionFromConfig === true)
 		{
-			$conf = new SMConfiguration(dirname(__FILE__) . "/../../config.xml.php");
+			$conf = SMEnvironment::GetConfiguration();
 			$this->lstTemplates->SetSelectedValue((($conf->GetEntry("TemplatePublic") !== null) ? $conf->GetEntry("TemplatePublic") : "Default"));
 		}
 	}
+
+
+	// SUBSITES - BETA SECTION - START
+	// REQUIRES REVIEW/IMPROVEMENTS!
+
+	private function populateSubSites()
+	{
+		$this->arrSubSites = array();
+		if (SMEnvironment::IsSubSite() === false) // Only show subsite administration on main site
+		{
+			foreach (SMEnvironment::GetSubSites() as $ss)
+			{
+				$this->arrSubSites[] = array(
+					"Name"			=> $ss,
+					"EditButton"	=> new SMLinkButton("SMConfigSubSiteEdit" . $ss),
+					"DeleteButton"	=> new SMLinkButton("SMConfigSubSiteDelete" . $ss)
+				);
+
+				$this->arrSubSites[count($this->arrSubSites) - 1]["EditButton"]->SetIcon(SMImageProvider::GetImage(SMImageType::$Modify));
+				$this->arrSubSites[count($this->arrSubSites) - 1]["EditButton"]->SetOnClick("alert('This function is not available yet'); return;");
+				$this->arrSubSites[count($this->arrSubSites) - 1]["DeleteButton"]->SetIcon(SMImageProvider::GetImage(SMImageType::$Delete));
+				$this->arrSubSites[count($this->arrSubSites) - 1]["DeleteButton"]->SetOnClick("if (confirm('Delete subsite?') === false) return;");
+			}
+		}
+	}
+
+	// SUBSITES - BETA SECTION - END
+
 
 	private function handlePostBack()
 	{
@@ -221,6 +268,20 @@ class SMConfigFrmConfig implements SMIExtensionForm
 			{
 				$this->deleteTemplate();
 			}
+			// SUBSITES - BETA SECTION - START
+			// REQUIRES REVIEW/IMPROVEMENTS!
+			else // Check subsite buttons
+			{
+				foreach ($this->arrSubSites as $ss)
+				{
+					if ($ss["DeleteButton"]->PerformedPostBack() === true)
+					{
+						$this->deleteSubSite($ss["Name"]);
+						break;
+					}
+				}
+			}
+			// SUBSITES - BETA SECTION - END
 		}
 	}
 
@@ -349,6 +410,38 @@ class SMConfigFrmConfig implements SMIExtensionForm
 		</table>
 		";
 
+
+		// SUBSITES - BETA SECTION - START
+		// REQUIRES REVIEW/IMPROVEMENTS!
+
+		$tableSubSites = "";
+		if (SMEnvironment::IsSubSite() === false) // Only show subsite administration on main site
+		{
+			$tableSubSites .= "<span style=\"float: right;\">" . $this->cmdNewSubSite->Render() . "</span>";
+
+			if (count($this->arrSubSites) > 0)
+			{
+				$tableSubSites .= "<br><br>";
+				$tableSubSites .= "<table>";
+
+				foreach ($this->arrSubSites as $ss)
+				{
+					// TODO: Extension should NOT know anothing about the sites/xyz path (see link created below) !!!
+					$tableSubSites .= "
+					<tr>
+						<td style=\"width: 220px\"><a href=\"sites/" . $ss["Name"] . "\">sites/" . $ss["Name"] . "</a></td>
+						<td style=\"width: 80px\"><span style=\"float: right;\">" . $ss["EditButton"]->Render() . " " . $ss["DeleteButton"]->Render() . "</span></td>
+					</tr>
+					";
+				}
+
+				$tableSubSites .= "</table>";
+			}
+		}
+
+		// SUBSITES - BETA SECTION - END
+
+
 		$output .= "
 		<table>
 			<tr>
@@ -370,6 +463,7 @@ class SMConfigFrmConfig implements SMIExtensionForm
 					" . $this->renderFieldset("Database", $this->lang->GetTranslation("DatabaseTitle"), $tableDatabase, true) . "
 					<br><br>
 					" . $this->renderFieldset("Smtp", $this->lang->GetTranslation("SmtpTitle"), $tableSmtp, true) . "
+					" . /* SUBSITES - BETA SECTION - START */ ((SMEnvironment::IsSubSite() === false) ? "<br><br>" . $this->renderFieldset("Subsites", "Subsites (experimental)", $tableSubSites, true) : "") /* SUBSITES - BETA SECTION - END */ . "
 					<br><br>
 					<span style=\"float: right;\">
 						" . $this->cmdCancel->Render() . "
@@ -431,7 +525,7 @@ class SMConfigFrmConfig implements SMIExtensionForm
 
 	private function loadConfiguration()
 	{
-		$conf = new SMConfiguration(dirname(__FILE__) . "/../../config.xml.php");
+		$conf = SMEnvironment::GetConfiguration();
 
 		$this->txtUsername->SetValue((($conf->GetEntry("Username") !== null) ? $conf->GetEntry("Username") : ""));
 		$this->txtPassword->SetValue((($conf->GetEntry("Password") !== null) ? $conf->GetEntry("Password") : ""));
@@ -465,7 +559,7 @@ class SMConfigFrmConfig implements SMIExtensionForm
 	{
 		// Update configuration file
 
-		$conf = new SMConfiguration(dirname(__FILE__) . "/../../config.xml.php", true);
+		$conf = SMEnvironment::GetConfiguration(true);
 
 		$lang = $this->lstLanguages->GetSelectedValue(); // NULL if no languages are available (not specified in config.xml.php)
 		if ($lang !== null && $lang !== $conf->GetEntry("Language"))
@@ -528,12 +622,14 @@ class SMConfigFrmConfig implements SMIExtensionForm
 		// Make sure a newly selected design template becomes immediately visible to the user.
 		if ($templateChanged === true)
 		{
-			$args["SMTplPublic"] = $conf->getEntry("TemplatePublic");
+			SMTemplateInfo::ClearTemplateOverrides();
+
+			/*$args["SMTplPublic"] = $conf->getEntry("TemplatePublic");
 
 			// Update admin session template if both public template and admin template are identical.
 			// Only then would we expect both sessions to adjust to the newly selected design template.
 			if ($templatesIdentical === true)
-				$args["SMTplAdmin"] = $conf->getEntry("TemplateAdmin");
+				$args["SMTplAdmin"] = $conf->getEntry("TemplateAdmin");*/
 		}
 
 		// "Restart" - we need to make sure that added/removed extensions does not (or has not) been partially
@@ -624,6 +720,20 @@ class SMConfigFrmConfig implements SMIExtensionForm
 
 		return false;
 	}
+
+
+	// SUBSITES - BETA SECTION - START
+	// REQUIRES REVIEW/IMPROVEMENTS!
+
+	private function deleteSubSite($name)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "name", $name, SMTypeCheckType::$String);
+
+		SMFileSystem::Delete("sites/" . $name, true); // TODO: Extension should NOT know anothing about the sites/xyz path
+		$this->populateSubSites();
+	}
+
+	// SUBSITES - BETA SECTION - END
 }
 
 ?>

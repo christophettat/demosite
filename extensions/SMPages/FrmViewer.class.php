@@ -107,14 +107,16 @@ class SMPagesFrmViewer implements SMIExtensionForm
 		return $page;
 	}
 
-	private function insertExtensions(SMPagesPage $page)
+	private function insertExtensions($pageContent, $pageId)
 	{
-		$pageContent = $page->GetContent();
+		SMTypeCheck::CheckObject(__METHOD__, "pageContent", $pageContent, SMTypeCheckType::$String);
+		SMTypeCheck::CheckObject(__METHOD__, "pageId", $pageId, SMTypeCheckType::$String);
+
 		$errorBox = "<div style=\"border: 1px solid #808080\">{error}</div>";
 
 		// Replace extension place holders with actual extensions
 
-		$placeholder = "src=\"" . SMExtensionManager::GetExtensionPath("SMPages") . "/editor/plugins/smextensions/img/placeholder.gif\"";
+		$placeholder = "editor/plugins/smextensions/img/placeholder.gif";
 		$offset = 0;
 
 		$imageStartPos = -1;
@@ -193,7 +195,7 @@ class SMPagesFrmViewer implements SMIExtensionForm
 
 			try
 			{
-				$extensionResult = $this->loadExtension($altValueData[0], $altValueData[1], $altValueData[2], $altValueData[3], $page->GetId(), (int)$altValueData[4]);
+				$extensionResult = $this->loadExtension($altValueData[0], $altValueData[1], $altValueData[2], $altValueData[3], $pageId, (int)$altValueData[4]);
 				$extensionContent = "<div class=\"SMPagesExtension " . $altValueData[2] . "" . (($extensionResult[1] === true) ? " SMIntegrated" : "") . "\">" . $extensionResult[0] . "</div>";
 			}
 			catch (Exception $ex)
@@ -206,7 +208,7 @@ class SMPagesFrmViewer implements SMIExtensionForm
 			$offset = $imageStartPos + 1;
 		}
 
-		$page->SetContent($pageContent);
+		return $pageContent;
 	}
 
 	private function loadExtension($extension, $file, $class, $arg, $pageId, $instanceId)
@@ -231,6 +233,38 @@ class SMPagesFrmViewer implements SMIExtensionForm
 		return array($content, $ext->GetIsIntegrated());
 	}
 
+	private function convertTableElements($html)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "html", $html, SMTypeCheckType::$String);
+
+		$html = str_replace("<table class=\"", "<div class=\"SMPagesTable ", $html);
+		$html = str_replace("<table", "<div class=\"SMPagesTable\" ", $html);
+		$html = preg_replace("/(<div[0-9a-z \\-=\"\\']*) border=[\"\\']0[\"\\']([0-9a-z \\-=\"\\']*>)/miU", "$1$2", $html); // https://regex101.com/r/z5xBPF/1
+		$html = str_replace("</table", "</div", $html);
+
+		$html = str_replace("<thead", "<div class=\"SMPagesTableHeader\" ", $html);
+		$html = str_replace("</thead", "</div", $html);
+
+		$html = str_replace("<tbody", "<div class=\"SMPagesTableBody\" ", $html);
+		$html = str_replace("</tbody", "</div", $html);
+
+		$html = str_replace("<tfoot", "<div class=\"SMPagesTableFooter\" ", $html);
+		$html = str_replace("</tfoot", "</div", $html);
+
+		$html = str_replace("<tr class=\"", "<div class=\"SMPagesTableRow ", $html);
+		$html = str_replace("<tr", "<div class=\"SMPagesTableRow\" ", $html);
+		$html = str_replace("</tr", "</div", $html);
+
+		$html = str_replace("<td class=\"", "<div class=\"SMPagesTableCell ", $html);
+		$html = str_replace("<td", "<div class=\"SMPagesTableCell\" ", $html);
+		$html = str_replace("</td", "</div", $html);
+
+		/*$html = str_replace("<th", "<div class=\"SMPagesTableHeaderCell\" ", $html);
+		$html = str_replace("</th", "</div", $html);*/
+
+		return $html;
+	}
+
 	public function Render()
 	{
 		return $this->RenderPage($this->loadPage());
@@ -241,9 +275,9 @@ class SMPagesFrmViewer implements SMIExtensionForm
 		if ($page->GetAccessible() === false)
 			return $this->lang->GetTranslation("NotAccessible");
 
-		$this->insertExtensions($page);
-
 		$content = $page->GetContent();
+		$content = $this->convertTableElements($content);
+		$content = $this->insertExtensions($content, $page->GetId());
 
 		if ($content === "")
 			return "";
@@ -265,6 +299,9 @@ class SMPagesFrmViewer implements SMIExtensionForm
 
 		// Clear float in case it was used on images or if Cards were used
 		$content = $content . "<div class=\"smPagesClear\"></div>";
+
+		// Replace tilde (~) in links with actual path to website (https://regex101.com/r/jV3cB6/4)
+		$content = preg_replace_callback("/(<a.*?href=([\"']))~(\\S*?\\2.*?>)/", "smPagesPregReplaceTildeCallback", $content);
 
 		return $content;
 	}
@@ -307,6 +344,14 @@ class SMPagesFrmViewer implements SMIExtensionForm
 
 		return $page;
 	}
+}
+
+function smPagesPregReplaceTildeCallback($matches) // 0 = full match, 1 = first portion (e.g. "<a href='"), 2 = quote type (" or '), 3 = last portion (e.g. "index.html title='Click me'>")
+{
+	$path = SMEnvironment::GetRequestPath();
+	$path .= (($path !== "/") ? "/" : ""); // E.g. / or /sites/demo/
+
+	return $matches[1] . $path . ((strpos($matches[3], "/") === 0) ? substr($matches[3], 1) : $matches[3]);
 }
 
 ?>

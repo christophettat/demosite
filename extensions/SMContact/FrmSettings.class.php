@@ -97,6 +97,7 @@ class SMContactFrmSettings implements SMIExtensionForm
 		$this->lstFieldTypes->AddOption(new SMOptionListItem("SMContactFieldTypeTextBox", $this->lang->GetTranslation("TextBox"), SMContactFieldTypes::$Textbox));
 		$this->lstFieldTypes->AddOption(new SMOptionListItem("SMContactFieldTypeCheckBox", $this->lang->GetTranslation("CheckBox"), SMContactFieldTypes::$Checkbox));
 		$this->lstFieldTypes->AddOption(new SMOptionListItem("SMContactFieldTypeEmail", $this->lang->GetTranslation("Email"), SMContactFieldTypes::$Email));
+		$this->lstFieldTypes->AddOption(new SMOptionListItem("SMContactFieldTypeAttachment", $this->lang->GetTranslation("Attachment"), SMContactFieldTypes::$Attachment));
 
 		$this->cmdCreate = new SMLinkButton("SMContactCreate");
 		$this->cmdCreate->SetIcon(SMImageProvider::GetImage(SMImageType::$Create));

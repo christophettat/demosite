@@ -1,11 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/SMExtensionManager.class.php");
-require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
-
 /// <container name="base/SMLanguageHandler">
 /// 	This class is useful for adding language support to an extension.
 /// 	To enable language support, the extension folder must contain a sub folder called
@@ -163,7 +157,7 @@ class SMLanguageHandler
 	/// </function>
 	public static function GetDefaultSystemLanguage()
 	{
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$cfg = SMEnvironment::GetConfiguration();
 		$lang = $cfg->GetEntry("Language");
 		return (($lang !== null && $lang !== "") ? $lang : "en");
 	}
@@ -176,7 +170,7 @@ class SMLanguageHandler
 	/// </function>
 	public static function GetLanguages()
 	{
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$cfg = SMEnvironment::GetConfiguration();
 		$languagesStr = $cfg->GetEntry("Languages");
 
 		if ($languagesStr === null)
@@ -290,7 +284,7 @@ class SMLanguageHandler
 	private static function getTranslationFolderPath($extension)
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "extension", $extension, SMTypeCheckType::$String);
-		return (($extension === "") ? "base" : "extensions/" . $extension) . "/Languages";
+		return (($extension === "") ? "base" : SMEnvironment::GetExtensionsDirectory() . "/" . $extension) . "/Languages";
 	}
 
 	private static function getTranslationFilePath($extension, $langCode)

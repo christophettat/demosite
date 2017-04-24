@@ -1,8 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-
 /// <container name="gui/SMGrid">
 /// 	Grid control used to represent data in a table like structure
 /// 	with built-in row selector.

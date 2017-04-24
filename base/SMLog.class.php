@@ -1,11 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMDataSource.classes.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-
 function SMErrorHandler($errNo, $errMsg, $errFile, $errLine)
 {
 	SMTypeCheck::CheckObject(__METHOD__, "errNo", $errNo, SMTypeCheckType::$Integer);
@@ -23,6 +17,7 @@ function SMErrorHandler($errNo, $errMsg, $errFile, $errLine)
 
 function SMExceptionHandler(Exception $exception)
 {
+	header("HTTP/1.1 500 Internal Server Error");
 	header("Content-Type: text/html; charset=ISO-8859-1");
 
 	echo "<b>An unhandled error occured</b><br><br>";

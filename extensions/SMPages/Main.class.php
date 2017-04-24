@@ -87,7 +87,7 @@ class SMPages extends SMExtension
 			$frm = new SMPagesFrmViewer($this->context);
 		}
 
-		$this->context->GetTemplate()->AddHtmlClass("SMPages" . (($isViewer === true) ? "Viewer" : "Admin"));
+		$this->context->GetTemplate()->AddHtmlClass("SMPages" . (($isViewer === true) ? "Viewer" . ((SMEnvironment::GetQueryValue("SMPagesDialog") !== null) ? "Dialog" : "") : "Admin"));
 
 		return $frm->Render();
 	}

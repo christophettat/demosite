@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMImageType">
 /// 	Enum that represents images from image package
 /// </container>
@@ -80,7 +76,7 @@ class SMImageProvider
 		if (property_exists("SMImageType", ucfirst($image)) === false)
 			throw new Exception("Specified image does not exist - use SMImageType::Image");
 
-		return "images/" . self::$theme . "/" . $image . self::$extension;
+		return SMEnvironment::GetImagesDirectory() . "/" . self::$theme . "/" . $image . self::$extension;
 	}
 
 	/// <function container="base/SMImageProvider" name="GetImageThemes" access="public" static="true" returns="string[]">
@@ -88,7 +84,7 @@ class SMImageProvider
 	/// </function>
 	public static function GetImageThemes()
 	{
-		return SMFileSystem::GetFolders(dirname(__FILE__) . "/../images");
+		return SMFileSystem::GetFolders(dirname(__FILE__) . "/../" . SMEnvironment::GetImagesDirectory());
 	}
 
 	/// <function container="base/SMImageProvider" name="GetImageTheme" access="public" static="true" returns="string">
@@ -104,16 +100,16 @@ class SMImageProvider
 
 	private static function initializeTheme()
 	{
-		$config = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$config = SMEnvironment::GetConfiguration();
 		$cfgImageTheme = $config->GetEntry("ImageTheme");
 
 		self::$theme = (($cfgImageTheme !== null && $cfgImageTheme !== "") ? $cfgImageTheme : "Default");
 
-		if (SMFileSystem::FolderExists(dirname(__FILE__) . "/../images/" . self::$theme) === false)
+		if (SMFileSystem::FolderExists(dirname(__FILE__) . "/../" . SMEnvironment::GetImagesDirectory() . "/" . self::$theme) === false)
 			throw new Exception("Specified image theme '" . self::$theme . "' does not exist");
 
 		// First image in folder determines image type (gif, png, jpg etc.)
-		$files = SMFileSystem::GetFiles(dirname(__FILE__) . "/../images/" . self::$theme);
+		$files = SMFileSystem::GetFiles(dirname(__FILE__) . "/../" . SMEnvironment::GetImagesDirectory() . "/" . self::$theme);
 
 		if (count($files) === 0)
 			throw new Exception("Specified image theme '" . self::$theme . "' contains no images");

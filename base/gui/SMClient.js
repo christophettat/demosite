@@ -1,3 +1,60 @@
+// SMEnvironment
+
+/// <container name="client/SMEnvironment">
+/// 	Sitemagic environment information
+/// </container>
+SMEnvironment = function()
+{
+}
+
+/// <function container="client/SMEnvironment" name="GetFilesDirectory" access="public" static="true" returns="string">
+/// 	<description> Returns path to files directory </description>
+/// </function>
+SMEnvironment.GetFilesDirectory = function()
+{
+	return ((window.SMClientEnvironmentInfo !== undefined) ? SMClientEnvironmentInfo.Dirs.Files : "files");
+}
+
+/// <function container="client/SMEnvironment" name="GetDataDirectory" access="public" static="true" returns="string">
+/// 	<description> Returns path to data directory </description>
+/// </function>
+SMEnvironment.GetDataDirectory = function()
+{
+	return ((window.SMClientEnvironmentInfo !== undefined) ? SMClientEnvironmentInfo.Dirs.Data : "data");
+}
+
+/// <function container="client/SMEnvironment" name="GetImagesDirectory" access="public" static="true" returns="string">
+/// 	<description> Returns path to images directory </description>
+/// </function>
+SMEnvironment.GetImagesDirectory = function()
+{
+	return ((window.SMClientEnvironmentInfo !== undefined) ? SMClientEnvironmentInfo.Dirs.Images : "images");
+}
+
+/// <function container="client/SMEnvironment" name="GetTemplatesDirectory" access="public" static="true" returns="string">
+/// 	<description> Returns path to templates directory </description>
+/// </function>
+SMEnvironment.GetTemplatesDirectory = function()
+{
+	return ((window.SMClientEnvironmentInfo !== undefined) ? SMClientEnvironmentInfo.Dirs.Templates : "templates");
+}
+
+/// <function container="client/SMEnvironment" name="GetExtensionsDirectory" access="public" static="true" returns="string">
+/// 	<description> Returns path to extensions directory </description>
+/// </function>
+SMEnvironment.GetExtensionsDirectory = function()
+{
+	return ((window.SMClientEnvironmentInfo !== undefined) ? SMClientEnvironmentInfo.Dirs.Extensions : "extensions");
+}
+
+/// <function container="client/SMEnvironment" name="IsSubSite" access="public" static="true" returns="boolean">
+/// 	<description> Returns flag indicating whether current site is a subsite </description>
+/// </function>
+SMEnvironment.IsSubSite = function()
+{
+	return ((window.SMClientEnvironmentInfo !== undefined) ? SMClientEnvironmentInfo.IsSubSite : false);
+}
+
 // SMLanguageHandler
 
 /// <container name="client/SMLanguageHandler">
@@ -735,6 +792,9 @@ function SMEventHandler()
 {
 }
 
+SMEventHandler.Internal = {};
+SMEventHandler.Internal.PageLoaded = false;
+
 /// <function container="client/SMEventHandler" name="AddEventHandler" access="public" static="true">
 /// 	<description> Registers handler for specified event on given DOMElement </description>
 /// 	<param name="element" type="DOMElement"> DOMElement on to which event handler is registered </param>
@@ -750,9 +810,22 @@ SMEventHandler.AddEventHandler = function(element, event, eventFunction)
 
 	// Fire event function for onload event if document in window/iframe has already been loaded.
 	// Notice that no event argument is passed to function since we don't have one.
-	if (event.toLowerCase() === "load" && element.document && element.document.readyState === "complete")
+	if (event.toLowerCase() === "load" && element.nodeType === 9 && element.readyState === "complete") // Element is a Document (window.document or iframe.contentDocument)
+		eventFunction();
+	else if (event.toLowerCase() === "load" && element.contentDocument && element.contentDocument.readyState === "complete") // Element is an iFrame
+		eventFunction();
+	else if (event.toLowerCase() === "load" && element === window && SMEventHandler.Internal.PageLoaded === true) // Element is the current Window instance
 		eventFunction();
 }
+
+;(function()
+{
+	SMEventHandler.AddEventHandler(window, "load", function()
+	{
+		SMEventHandler.Internal.PageLoaded = true;
+	});
+})();
+
 
 // SMCookie
 
@@ -779,7 +852,22 @@ SMCookie.SetCookie = function(name, value, seconds)
 
 	var date = new Date();
 	date.setTime(date.getTime() + (seconds * 1000));
-	document.cookie = name + "=" + value + "; expires=" + date.toGMTString() + "; path=/";
+
+	var path = location.pathname.match(/^.*\//)[0]; // Examples: / OR /Sitemagic/ OR /Sitemagic/sites/demo/ - https://regex101.com/r/aU8iW6/1
+
+	if (SMEnvironment.IsSubSite() === false)
+	{
+		// Unfortunately cookies on main site will be accessible by subsites, and also cause naming conflicts.
+		// Therefore a prefix is made part of the cookie key for the main site.
+		// This is not necessary for subsites since the cookie path prevent cookies from being shared.
+		// Example:
+		//  - /Sitemagic: Cookies are available to every sub folder
+		//  - /Sitemagic/sites/demo: Cookies are available to every sub folder, but not parent folders, and therefore not to e.g. /Sitemagic/sites/example
+		// NOTICE: "SM#/#" prefix MUST be identical to prefix used in SMEnvironment server side!
+		name = "SM#/#" + name;
+	}
+
+	document.cookie = name + "=" + value + "; expires=" + date.toGMTString() + "; path=" + path;
 
 	return true;
 }
@@ -790,6 +878,13 @@ SMCookie.SetCookie = function(name, value, seconds)
 /// </function>
 SMCookie.GetCookie = function(name)
 {
+	if (SMEnvironment.IsSubSite() === false)
+	{
+		// Use cookie prefix for main site to prevent conflicts with cookies on subsites.
+		// NOTICE: "SM#/#" prefix MUST be identical to prefix used in SMEnvironment server side!
+		name = "SM#/#" + name;
+	}
+
 	var name = name + "=";
 	var cookies = document.cookie.split(";");
 	var cookie = null;
@@ -826,7 +921,11 @@ SMCookie.GetCookies = function()
 			cookie = cookie.substring(1, cookie.length);
 
 		info = cookie.split("=");
-		names.push(info[0]);
+
+		if (SMEnvironment.IsSubSite() === true && info[0].indexOf("SM#/#") === 0) // Exclude main site cookies on subsites
+			continue;
+
+		names.push(((info[0].indexOf("SM#/#") === 0 ? info[0].substring(5) : info[0])));
 	}
 
 	return names;

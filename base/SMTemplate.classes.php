@@ -1,16 +1,5 @@
 <?php
 
-// SMTemplate only
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-require_once(dirname(__FILE__) . "/SMTextFile.classes.php");
-require_once(dirname(__FILE__) . "/SMStringUtilities.classes.php");
-
-// SMTemplateInfo only
-require_once(dirname(__FILE__) . "/SMConfiguration.class.php");
-require_once(dirname(__FILE__) . "/SMFileSystem.class.php");
-
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMTemplate">
 /// 	Class represents a design template - an HTML file containing place holders and
 /// 	repeating block, which can be easily replaced with actual data.
@@ -54,9 +43,36 @@ class SMTemplate
 
 	/// <function container="base/SMTemplate" name="__construct" access="public">
 	/// 	<description> Create instance of SMTemplate </description>
+	/// 	<param name="templateFile" type="string" default="null"> Optional path to template file </param>
+	/// </function>
+	public function __construct($templateFile = null)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "templateFile", (($templateFile !== null) ? $templateFile : ""), SMTypeCheckType::$String);
+
+		$this->content = "";
+		$this->closed = false;
+
+		if ($templateFile !== null)
+			$this->LoadFile($templateFile);
+	}
+
+	/// <function container="base/SMTemplate" name="LoadHtml" access="public">
+	/// 	<description> Load template from string </description>
+	/// 	<param name="html" type="string"> HTML template string </param>
+	/// </function>
+	public function LoadHtml($html)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "html", $html, SMTypeCheckType::$String);
+
+		$this->content = $html;
+		$this->closed = false;
+	}
+
+	/// <function container="base/SMTemplate" name="LoadFile" access="public">
+	/// 	<description> Load template from file </description>
 	/// 	<param name="templateFile" type="string"> Path to template file </param>
 	/// </function>
-	public function __construct($templateFile)
+	public function LoadFile($templateFile)
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "templateFile", $templateFile, SMTypeCheckType::$String);
 
@@ -466,7 +482,26 @@ class SMTemplate
 			if ($fileRef === null)
 				break;
 
-			$fileReader = new SMTextFileReader($basePath . "/" . $fileRef);
+			$path = $basePath . "/" . $fileRef;
+
+			if (SMEnvironment::IsSubSite() === true && SMFileSystem::FileExists($basePath . "/../.htaccess") === true) // .htaccess is found in sites/XYZ/templates folder
+			{
+				// Subsite is configured to allow templates in sites/XYZ/templates to include index.html and basic.html from the main site's _BaseGeneric template.
+				// This is necessary in order to ensure backward compatibility, without requiring _BaseGeneric to be installed in every subsite. We only
+				// want _BaseGeneric to be installed on the main site which makes upgrading easier.
+
+				// Get name of templates folder (most likely just "templates", unless renamed in custom build).
+				// In this case we (fairly) assume that the name of the templates folder is the same for both the main site and subsites.
+				$templatesFolderName = SMEnvironment::GetTemplatesDirectory(); // templates (shared) or sites/XYZ/templates (not shared)
+				$templatesFolderName = ((strpos($templatesFolderName, "/") !== false) ? substr($templatesFolderName, strrpos($templatesFolderName, "/") + 1) : $templatesFolderName);
+
+				if (SMStringUtilities::EndsWith($path, "../_BaseGeneric/index.html") === true)
+					$path = SMEnvironment::GetTemplatesDirectory() . "/../../../" . $templatesFolderName . "/_BaseGeneric/index.html";
+				if (SMStringUtilities::EndsWith($path, "../_BaseGeneric/basic.html") === true)
+					$path = SMEnvironment::GetTemplatesDirectory() . "/../../../" . $templatesFolderName . "/_BaseGeneric/basic.html";
+			}
+
+			$fileReader = new SMTextFileReader($path);
 			$content = $fileReader->ReadAll();
 
 			$this->content = str_replace($startTag . $fileRef . $endTag, $content, $this->content);
@@ -509,7 +544,7 @@ class SMTemplateInfo
 	/// </function>
 	public static function GetTemplates()
 	{
-		$folders = SMFileSystem::GetFolders(dirname(__FILE__) . "/../templates");
+		$folders = SMFileSystem::GetFolders(dirname(__FILE__) . "/../" . SMEnvironment::GetTemplatesDirectory());
 		$templates = array();
 
 		foreach ($folders as $folder)
@@ -562,6 +597,16 @@ class SMTemplateInfo
 	public static function GetTemplateOverridden()
 	{
 		return (self::getTemplateOverride() !== null);
+	}
+
+	/// <function container="base/SMTemplateInfo" name="ClearTemplateOverrides" access="public" static="true">
+	/// 	<description> Clear any template overriding currently in effect </description>
+	/// </function>
+	public static function ClearTemplateOverrides()
+	{
+		self::$overrideByCode = null;
+		SMEnvironment::DestroySession("SMTplPublic");
+		SMEnvironment::DestroySession("SMTplAdmin");
 	}
 
 	/// <function container="base/SMTemplateInfo" name="GetTemplateHtmlFile" access="public" static="true" returns="string">
@@ -650,7 +695,7 @@ class SMTemplateInfo
 		if (property_exists("SMTemplateType", $templateType) === false)
 			throw new Exception("Invalid template type '" . $templateType . "' specified - use SMTemplateType::Type");
 
-		$folder = dirname(__FILE__) . "/../templates/" . $template . "/enhancements";
+		$folder = dirname(__FILE__) . "/../" . SMEnvironment::GetTemplatesDirectory() . "/" . $template . "/enhancements";
 		$exclude = strtolower((($templateType === SMTemplateType::$Basic) ? SMTemplateType::$Normal : SMTemplateType::$Basic)) . ".js";
 
 		if (SMFileSystem::FolderExists($folder) === true)
@@ -675,17 +720,17 @@ class SMTemplateInfo
 		SMTypeCheck::CheckObject(__METHOD__, "template", $template, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "file", $file, SMTypeCheckType::$String);
 
-		if (SMFileSystem::FileExists(dirname(__FILE__) . "/../templates/" . $template . "/" . $file) === false)
+		if (SMFileSystem::FileExists(dirname(__FILE__) . "/../" . SMEnvironment::GetTemplatesDirectory() . "/" . $template . "/" . $file) === false)
 			return null;
 
-		return "templates/" . $template . "/" . $file;
+		return SMEnvironment::GetTemplatesDirectory() . "/" . $template . "/" . $file;
 	}
 
 	private static function getTemplate($template)
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "template", $template, SMTypeCheckType::$String);
 
-		$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+		$cfg = SMEnvironment::GetConfiguration();
 		$tpl = $cfg->GetEntry($template);
 		return (($tpl !== null && $tpl !== "") ? $tpl : "Default");
 	}
@@ -701,7 +746,7 @@ class SMTemplateInfo
 
 			if (SMAuthentication::Authorized() === false && ($smTpl !== null || $smTplPub !== null || $smTplAdm !== null))
 			{
-				$cfg = new SMConfiguration(dirname(__FILE__) . "/../config.xml.php");
+				$cfg = SMEnvironment::GetConfiguration();
 				$allowed = $cfg->GetEntry("AllowTemplateOverriding");
 
 				if ($allowed === null || strtolower($allowed) !== "true")

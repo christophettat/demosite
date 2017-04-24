@@ -110,31 +110,35 @@ div.SMPagesCard span.SMPagesCardHeader + div.SMPagesExtension div[id^="SMExterna
 
 /* SMContact */
 
+div.SMContactContentPageExtension,
+div.SMContactContentPageExtension table
+{
+    width: 100%;
+}
+
+div.SMContactContentPageExtension td
+{
+	display: block;
+    width: 100% !important;
+	padding: 1px;
+}
+
+div.SMContactContentPageExtension input[type="text"],
+div.SMContactContentPageExtension input[type="file"],
+div.SMContactContentPageExtension textarea
+{
+    width: 100% !important;
+    padding: 0.3em;
+}
+
+div.SMContactContentPageExtension tr:nth-last-child(2)
+{
+	display: none;
+}
+
 span.SMContactRequired
 {
 	color: red;
-}
-div.SMContactContentPageExtension td
-{
-	padding: 1px;
-}
-div.SMContactContentPageExtension td:first-child
-{
-	white-space: nowrap; /* Does not work with IE7 on table cells, must be wrapped in span - too bad */
-	padding-right: 30px;
-}
-
-/* Make contact forms stretch within Cards.
-   Notice that these rules are not applied to IE7/IE8 due to a bug in IE7 that causes an input field
-   to widen to show its entire value if one has been set initially (bug triggered by width:XYZ% on inputs). */
-div.SMPagesCard:not(#IE7IE8) div.SMContactContentPageExtension td + td
-{
-	width: 100% !important;
-}
-div.SMPagesCard:not(#IE7IE8) div.SMContactContentPageExtension td + td input[type="text"],
-div.SMPagesCard:not(#IE7IE8) div.SMContactContentPageExtension td + td textarea
-{
-	width: 95% !important; /* Using 95% to allow styles such as padding and borders which will be added to the width (95% + padding + margin + border). 100% would cause input elements to overflow boundaries of table cells. */
 }
 
 
@@ -161,4 +165,20 @@ div.SMPagesCard:not(#IE7IE8) div.SMCommentsContentPageExtension td + td input,
 div.SMPagesCard:not(#IE7IE8) div.SMCommentsContentPageExtension td + td textarea
 {
 	width: 95% !important; /* Using 95% to allow styles such as padding and borders which will be added to the width (95% + padding + margin + border). 100% would cause input elements to overflow boundaries of table cells */
+}
+
+
+/* SMSearch */
+
+div.SMSearchContentPageExtension
+{
+	font-size: 1rem; /* Make button label adapt general document font size */
+}
+
+span.SMSearchMatch
+{
+	font-weight: bold;
+	background: yellow;
+	background: rgba(255, 255, 0, 0.4);
+	padding: 1px;
 }

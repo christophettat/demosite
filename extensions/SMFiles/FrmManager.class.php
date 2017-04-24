@@ -480,9 +480,14 @@ class SMFilesFrmManager implements SMIExtensionForm
 			smFilesCloseUploader();
 			var folderPath = '" . rawurlencode((($this->getSelectedFolderPath() !== null) ? $this->getSelectedFolderPath() : SMEnvironment::GetFilesDirectory())) . "';
 
+			var width = 700;
+			var height = 200;
+			var posX = Math.floor((SMBrowser.GetPageWidth() / 2) - (width / 2));
+			var posY = 200;
+
 			smFilesUploader = new SMWindow(\"SMFilesUpload\");
-			smFilesUploader.SetSize(470, 160);
-			smFilesUploader.SetCenterWindow(true);
+			smFilesUploader.SetSize(width, height);
+			smFilesUploader.SetPosition(posX, posY); //smFilesUploader.SetCenterWindow(true);
 			smFilesUploader.SetOnCloseCallback(smFormPostBack);
 			smFilesUploader.SetUrl(\"" . SMExtensionManager::GetExtensionUrl("SMFiles", SMTemplateType::$Basic, SMExecutionMode::$Dedicated) . "&SMFilesUpload&SMFilesUploadPath=\" + folderPath);
 			smFilesUploader.Show();

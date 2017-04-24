@@ -1,7 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMFileSystem">
 /// 	SMFileSystem provides access to most common file system operations.
 /// 	Easily read, move, rename, copy, or delete files and folders. Query file information
@@ -44,7 +42,7 @@ class SMFileSystem
 		SMTypeCheck::CheckObject(__METHOD__, "path", $path, SMTypeCheckType::$String);
 
 		$path = utf8_encode($path);
-		return mkdir($path, 0777, true); // Created with highest possible permissions allowed by parent folder
+		return @mkdir($path, 0777, true); // Created with highest possible permissions allowed by parent folder
 	}
 
 	/// <function container="base/SMFileSystem" name="Copy" access="public" static="true" returns="boolean">
@@ -381,12 +379,14 @@ class SMFileSystem
 	/// 	<param name="fileField" type="string"> Name of file picker element in web form </param>
 	/// 	<param name="moveToFolder" type="string"> Specify where to store received file (folder path must exist) </param>
 	/// 	<param name="filenameRegEx" type="string" default="String.Empty"> Optional regular expression which filename characters are matched agains - invalid characters are stripped from filename </param>
+	/// 	<param name="validExtensions" type="string[]" default="string[0]"> Array of valid file extensions, e.g. array('jpg', 'jpeg', 'png', 'gif') </param>
 	/// </function>
-	public static function HandleFileUpload($fileField, $moveToFolder, $filenameRegEx = "")
+	public static function HandleFileUpload($fileField, $moveToFolder, $filenameRegEx = "", $validExtensions = array())
 	{
 		SMTypeCheck::CheckObject(__METHOD__, "fileField", $fileField, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "moveToFolder", $moveToFolder, SMTypeCheckType::$String);
 		SMTypeCheck::CheckObject(__METHOD__, "filenameRegEx", $filenameRegEx, SMTypeCheckType::$String);
+		SMTypeCheck::CheckArray(__METHOD__, "validExtensions", $validExtensions, SMTypeCheckType::$String);
 
 		if (isset($_FILES[$fileField]) === false || $_FILES[$fileField]["error"] !== 0 || $_FILES[$fileField]["name"] === "")
 			return false;
@@ -394,9 +394,33 @@ class SMFileSystem
 		if ($moveToFolder === "") // Empty means script root
 			$moveToFolder = ".";
 
+		$filename = $_FILES[$fileField]["name"];
+
+		// Check extensions - make sure only valid file types are uploaded
+
+		if (count($validExtensions) > 0)
+		{
+			if (strpos($filename, ".") === false)
+				return false;
+
+			$fileExt = strtolower(substr($filename, strrpos($filename, ".")));
+			$isValid = false;
+
+			foreach ($validExtensions as $ext)
+			{
+				if ($fileExt === strtolower("." . $ext))
+				{
+					$isValid = true;
+					break;
+				}
+			}
+
+			if ($isValid === false)
+				return false;
+		}
+
 		// Make sure only valid characters are preserved in filename
 
-		$filename = $_FILES[$fileField]["name"];
 		$newFilename = "";
 
 		if ($filenameRegEx !== "")
@@ -448,6 +472,25 @@ class SMFileSystem
 		// Move file from temp directory to target directory
 
 		return move_uploaded_file($_FILES[$fileField]["tmp_name"], $moveToFolderUtf8 . "/" . $newFilenameUtf8);
+	}
+
+	/// <function container="base/SMFileSystem" name="GetUploadPath" access="public" static="true" returns="string">
+	/// 	<description> Get temporarily path to file uploaded during current request - Null is returned in case of an error or if upload field does not exist </description>
+	/// 	<param name="fileField" type="string">
+	/// 		Unique name for file upload field.
+	/// 		If the GUI framework in Sitemagic is
+	/// 		being used, simply pass $input->GetClientId(),
+	/// 		where $input is an instance of SMInput.
+	/// 	</param>
+	/// </function>
+	public static function GetUploadPath($fileField)
+	{
+		SMTypeCheck::CheckObject(__METHOD__, "fileField", $fileField, SMTypeCheckType::$String);
+
+		if (isset($_FILES[$fileField]) === false || $_FILES[$fileField]["error"] !== 0 || $_FILES[$fileField]["name"] === "")
+			return null;
+
+		return $_FILES[$fileField]["tmp_name"];
 	}
 
 	/// <function container="base/SMFileSystem" name="DownloadFileToClient" access="public" static="true">

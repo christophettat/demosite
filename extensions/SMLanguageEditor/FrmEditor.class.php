@@ -37,7 +37,7 @@ class SMLanguageEditorFrmEditor implements SMIExtensionForm
 	{
 		// Language selector
 
-		$smCfg = new SMConfiguration("config.xml.php");
+		$smCfg = SMEnvironment::GetConfiguration();
 		$langs = explode(";", $smCfg->GetEntry("Languages"));
 
 		$this->lstLangs = new SMOptionList("SMLanguageEditorLanguages");
@@ -251,7 +251,7 @@ class SMLanguageEditorFrmEditor implements SMIExtensionForm
 
 				// Make new language package available to Sitemagic (add to config.xml.php)
 
-				$cfg = new SMConfiguration("config.xml.php", true);
+				$cfg = SMEnvironment::GetConfiguration(true);
 				$cfg->SetEntry("Languages", $cfg->GetEntry("Languages") . ";" . $lang);
 				$cfg->Commit();
 
@@ -309,7 +309,7 @@ class SMLanguageEditorFrmEditor implements SMIExtensionForm
 
 				// Update available languages in Sitemagic
 
-				$cfg = new SMConfiguration("config.xml.php", true);
+				$cfg = SMEnvironment::GetConfiguration(true);
 				$langsArr = explode(";", $cfg->GetEntry("Languages"));
 
 				$newLangs = "";

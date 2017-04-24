@@ -1,9 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../../SMTypeCheck.classes.php");
-require_once(dirname(__FILE__) . "/../../SMEnvironment.class.php");
-require_once(dirname(__FILE__) . "/../../SMStringUtilities.classes.php");
-
 /// <container name="gui/SMInputType">
 /// 	Enum representing input control type
 /// </container>
@@ -562,7 +558,7 @@ class SMInput
 			foreach ($this->attributes as $key => $value)
 				if ($key !== SMInputAttribute::$Value && $key !== SMInputAttribute::$MaxLength)
 					$output .= " " . strtolower($key) . "=\"" . $value . "\"";
-			$output .= ">" . ((isset($this->attributes[SMInputAttribute::$Value]) === true) ? SMStringUtilities::HtmlEncode($this->attributes[SMInputAttribute::$Value]) : "") . "</textarea>";
+			$output .= ">" . ((isset($this->attributes[SMInputAttribute::$Value]) === true) ? SMStringUtilities::HtmlEncode($this->attributes[SMInputAttribute::$Value], true) : "") . "</textarea>";
 
 			if (isset($this->attributes[SMInputAttribute::$MaxLength]) === true)
 			{
@@ -580,7 +576,7 @@ class SMInput
 
 			$output .= "<input id=\"" . $this->GetClientId() . "\" name=\"" . $this->nameAttr . "\" type=\"" . strtolower($this->type) . "\"";
 			foreach ($this->attributes as $key => $value)
-				$output .= " " . strtolower($key) . "=\"" . (($key === SMInputAttribute::$Value) ? SMStringUtilities::HtmlEncode($value) : $value) . "\"";
+				$output .= " " . strtolower($key) . "=\"" . (($key === SMInputAttribute::$Value) ? SMStringUtilities::HtmlEncode($value, true) : $value) . "\"";
 			$output .= ">";
 		}
 

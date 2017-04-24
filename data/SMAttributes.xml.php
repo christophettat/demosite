@@ -9,7 +9,7 @@
 	<entry key="SMContactRecipients" value="christophe_xxx@yahoo.fr,marijke.nulens@gmail.com"/>
 	<entry key="SMContactSubject" value="Location Gite Le Vigan"/>
 	<entry key="SMContactSuccessMessage" value="Merci de votre message, notre r&amp;eacute;ponse ne devrait pas tarder"/>
-	<entry key="SMPagesAutoSeoUrlsVersion" value="20140720"/>
+	<entry key="SMPagesAutoSeoUrlsVersion" value="20160828"/>
 	<entry key="SMAutoSeoUrlsCompleted" value="true"/>
 	<entry key="SMPagesSettingsUrlType" value="Filename"/>
 	<entry key="SMPagesSettingsSeoUrls" value="true"/>
@@ -22,7 +22,8 @@
 	<entry key="SMImageMontageDisplayPicker" value="false"/>
 	<entry key="SMImageMontageShuffle" value="true"/>
 	<entry key="SMImageMontageSlideShowInterval" value="3000"/>
-	<entry key="SMClientCacheKey" value="11"/>
+	<entry key="SMClientCacheKey" value="13"/>
 	<entry key="SMGoogleAnalyticsTrackerId" value="UA-67845419-2"/>
 	<entry key="SMGoogleAnalyticsReportMode" value="Everything"/>
+	<entry key="SMEnvironmentSessionName/" value="SMSESSION6c3445ecf37b1278"/>
 </database>

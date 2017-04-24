@@ -1,15 +1,5 @@
 <?php
 
-// SMRequest class
-require_once(dirname(__FILE__) . "/SMKeyValue.classes.php");
-
-// SMRedirect class
-require_once(dirname(__FILE__) . "/SMDataSource.classes.php");
-require_once(dirname(__FILE__) . "/SMAttributes.class.php");
-require_once(dirname(__FILE__) . "/SMSqlCommon.classes.php");
-
-require_once(dirname(__FILE__) . "/SMTypeCheck.classes.php");
-
 /// <container name="base/SMRequest">
 /// 	Class used to send and receive data through GET and POST.
 ///

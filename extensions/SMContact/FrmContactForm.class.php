@@ -57,6 +57,14 @@ class SMContactFrmContactForm implements SMIExtensionForm
 				$control->SetAttribute(SMInputAttributeTextarea::$Rows, "1");
 				$control->SetAttribute(SMInputAttributeTextarea::$Style, "width: 250px; height: 100px");
 			}
+			else if ($type === SMContactFieldTypes::$Attachment)
+			{
+				$this->context->GetForm()->SetContentType(SMFormContentType::$MultiPart);
+
+				$control = new SMInput("SMContactField" . (string)($count . "_" . $this->instanceId), SMInputType::$File);
+				$control->SetAttribute(SMInputAttributeFile::$OnChange, "smContactUploadSizeCheck" . $this->instanceId . "(this);");
+				$control->SetAttribute(SMInputAttributeFile::$Style, "width: 250px");
+			}
 			else
 			{
 				$control = new SMInput("SMContactField" . (string)($count . "_" . $this->instanceId), SMInputType::$Text);
@@ -89,7 +97,10 @@ class SMContactFrmContactForm implements SMIExtensionForm
 		$recipients = SMContactSettings::GetRecipients();
 
 		if ($recipients === "")
+		{
 			$this->message = $this->lang->GetTranslation("ErrorNoRecipients");
+			return;
+		}
 
 		// Get data from contact form
 
@@ -97,6 +108,9 @@ class SMContactFrmContactForm implements SMIExtensionForm
 		$value = null;
 		$body = "";
 		$replyTo = "";
+		$attachments = array();
+
+		$body .= "<table cellspacing=\"0\" cellpadding=\"10\" border=\"0\" style=\"padding: 10px 5px 10px 5px;\">";
 
 		foreach ($this->controls as $control)
 		{
@@ -110,6 +124,28 @@ class SMContactFrmContactForm implements SMIExtensionForm
 			{
 				$replyTo .= (($replyTo !== "") ? ";" : "") . $control["control"]->GetValue();
 				$value = $control["control"]->GetValue();
+			}
+			else if ($control["type"] === SMContactFieldTypes::$Attachment)
+			{
+				// Attachment is currently located in PHP's tmp directory - will be removed automatically when request is complete.
+				// http://www.php.net/manual/en/features.file-upload.post-method.php
+				// "The file will be deleted from the temporary directory at the end of the request if it has not been moved away or renamed."
+
+				// Control may return Null if File Uploads have been disabled (file_uploads = off).
+
+				$value = "";
+
+				if ($control["control"]->GetValue() !== null && strlen($control["control"]->GetValue()) > 0) // IE10-11 fix: using strlen(..) to check value - IE10 and IE11 returns an empty string that is not comparable with ""
+				{
+					if (SMStringUtilities::Validate($control["control"]->GetValue(), SMValueRestriction::$Filename) === false)
+					{
+						$this->message = $this->lang->GetTranslation("ErrorInvalidFilename");
+						return;
+					}
+
+					$attachments[$control["control"]->GetValue()] = SMFileSystem::GetUploadPath($control["control"]->GetClientId());
+					$value = $control["control"]->GetValue();
+				}
 			}
 			else
 			{
@@ -129,8 +165,13 @@ class SMContactFrmContactForm implements SMIExtensionForm
 			if ($value !== "")
 				$contentSet = true;
 
-			$body .= $control["title"] . ":\r\n" . $value . "\r\n\r\n";
+			$body .= "<tr>";
+			$body .= "<td style=\"white-space: nowrap; padding-right: 25px; vertical-align: top; border-bottom: 1px solid silver;\">" . $control["title"] . "</td>";
+			$body .= "<td style=\"border-bottom: 1px solid silver;\">" . nl2br(str_replace("&amp;#", "&#", SMStringUtilities::HtmlEncode($value))) . "</td>"; // Using str_replace(..) to fix HTML HEX entities after htmlspecialchars(..) - Unicode support
+			$body .= "</tr>";
 		}
+
+		$body .= "</table>";
 
 		// Send e-mail
 
@@ -138,11 +179,16 @@ class SMContactFrmContactForm implements SMIExtensionForm
 		{
 			// Construct mail
 
-			$mail = new SMMail();
+			$mail = new SMMail(SMMailType::$Html);
 			$mail->SetRecipients(explode(",", $recipients));
 			$mail->SetSender($replyTo);
 			$mail->SetSubject(SMContactSettings::GetSubject());
 			$mail->SetContent($body);
+
+			// Add attachments
+
+			foreach ($attachments as $filename => $path)
+				$mail->AddAttachment($filename, $path);
 
 			// Send and check for errors
 
@@ -181,7 +227,7 @@ class SMContactFrmContactForm implements SMIExtensionForm
 			$output .= "<i>" . $this->message . "</i><br><br>";
 
 		$output .= "
-		<table>
+		<table id=\"smContactForm" . $this->instanceId . "\">
 		";
 
 		foreach ($this->controls as $control)
@@ -204,6 +250,30 @@ class SMContactFrmContactForm implements SMIExtensionForm
 				<td style=\"width: 250px\"><div style=\"text-align: right\">" . $this->cmdSend->Render() . "</div></td>
 			</tr>
 		</table>
+		";
+
+		$output .= "
+		<script type=\"text/javascript\">
+		function smContactUploadSizeCheck" . $this->instanceId . "(currentUploadField)
+		{
+			var inputs = document.getElementById(\"smContactForm" . $this->instanceId . "\").getElementsByTagName(\"input\");
+			var size = 0;
+
+			for (var i = 0 ; i < inputs.length ; i++)
+			{
+				if (inputs[i].type !== \"file\" || inputs[i].files === undefined)
+					continue;
+
+				size += ((inputs[i].files.length > 0) ? inputs[i].files[0].size : 0);
+			}
+
+			if (size > " . SMEnvironment::GetMaxUploadSize() . ")
+			{
+				currentUploadField.value = \"\";
+				alert('" . str_replace("2048", (string)(SMEnvironment::GetMaxUploadSize() / 1024), $this->lang->GetTranslation("FileSizeLimit", true)) . "');
+			}
+		}
+		</script>
 		";
 
 		$fieldSet = new SMFieldset("SMContact" . (string)$this->instanceId);
