@@ -1,1 +1,1 @@
-{"Page":{"Dimensions":{"Dimensions":{"Width":{"Value":"1000"}}}},"Cards page":{"Dimensions":{"Dimensions":{"Width":{"Value":"1200"}}}}}
+{"Page":{"Dimensions":{"Dimensions":{"Width":{"Value":"1200"}}}},"Cards page":{"Dimensions":{"Dimensions":{"Width":{"Value":"1200"}}}},"Cards":{"Text":{"Formatting":{"Color":{"Value":{"Hex":"#000000","Red":0,"Green":0,"Blue":0,"Alpha":1}}}},"Borders and colors":{"Border":{"Size":{"Value":0}},"Shadow":{"Size":{"Value":1},"Blur":{"Value":8}}}}}
