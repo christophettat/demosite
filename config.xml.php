@@ -42,7 +42,7 @@
 <!-- optional, may be left out or empty -->
 	<entry key="SMTPUser" value="gitevigan@gmail.com"/>
 <!-- optional, may be left out or empty -->
-	<entry key="SMTPPass" value="ogjtzoaqfulyjpqu"/>
+	<entry key="SMTPPass" value="wnxeylozygmzmzff"/>
 <!-- optional, may be left out or empty - defaults to False -->
 	<entry key="SMTPDebug" value="False"/>
 </entries>
